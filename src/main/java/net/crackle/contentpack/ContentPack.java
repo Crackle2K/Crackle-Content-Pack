@@ -23,7 +23,7 @@ public class ContentPack implements ModInitializer {
 
 		ModItemGroups.registerItemGroups();
 
-		FuelRegistry.INSTANCE.add(ModItems.SULFUR, 600);
+		FuelRegistry.INSTANCE.add(ModItems.SULPHUR, 600);
 
 	}
 }

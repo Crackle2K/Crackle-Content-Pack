@@ -18,6 +18,7 @@ public class ModItemGroups {
                     .entries((displayContext, entries) -> {
                         entries.add(ModItems.TANZANITE);
                         entries.add(ModItems.CAULIFLOWER);
+                        entries.add(ModItems.SULPHUR);
                     }).build());
 
 
