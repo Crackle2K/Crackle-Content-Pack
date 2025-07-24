@@ -1,0 +1,40 @@
+{
+	"schemaVersion": 1,
+	"id": "content-pack",
+	"version": "${version}",
+	"name": "Crackle's Content Pack",
+	"description": "A simple mod dedicated to improving your Vanilla Minecraft experience.",
+	"authors": [
+		"Crackle"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "MIT License",
+	"icon": "assets/content-pack/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"net.crackle.contentpack.ContentPack"
+		],
+		"fabric-datagen": [
+			"net.crackle.contentpack.ContentPackDataGenerator"
+		],
+		"client": [
+			"net.crackle.contentpack.ContentPackClient"
+		]
+	},
+	"mixins": [
+		"content-pack.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.14",
+		"minecraft": "~1.21",
+		"java": ">=21",
+		"fabric-api": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
