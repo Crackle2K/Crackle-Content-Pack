@@ -1,5 +1,7 @@
 package net.crackle.contentpack;
 
+import net.crackle.contentpack.block.ModBlocks;
+import net.crackle.contentpack.item.ModItemGroups;
 import net.crackle.contentpack.item.ModItems;
 import net.fabricmc.api.ModInitializer;
 
@@ -16,6 +18,9 @@ public class ContentPack implements ModInitializer {
 	public void onInitialize() {
 
 		ModItems.registerModItems();
+		ModBlocks.registerModBlocks();
+
+		ModItemGroups.registerItemGroups();
 
 	}
 }
