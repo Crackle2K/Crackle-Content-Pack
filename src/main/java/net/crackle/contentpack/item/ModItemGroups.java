@@ -17,6 +17,7 @@ public class ModItemGroups {
                     .displayName(Text.translatable("itemgroup.contentpack.contentpack_items"))
                     .entries((displayContext, entries) -> {
                         entries.add(ModItems.TANZANITE);
+                        entries.add(ModItems.CAULIFLOWER);
                     }).build());
 
 

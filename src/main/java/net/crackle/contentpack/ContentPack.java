@@ -5,6 +5,7 @@ import net.crackle.contentpack.item.ModItemGroups;
 import net.crackle.contentpack.item.ModItems;
 import net.fabricmc.api.ModInitializer;
 
+import net.fabricmc.fabric.api.registry.FuelRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +22,8 @@ public class ContentPack implements ModInitializer {
 		ModBlocks.registerModBlocks();
 
 		ModItemGroups.registerItemGroups();
+
+		FuelRegistry.INSTANCE.add(ModItems.SULFUR, 600);
 
 	}
 }
