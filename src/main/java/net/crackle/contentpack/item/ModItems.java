@@ -10,6 +10,7 @@ public class ModItems {
     public static final Item TANZANITE = registerItem("tanzanite", new Item(new Item.Settings()));
     public static final Item CAULIFLOWER = registerItem("cauliflower", new Item(new Item.Settings().food(ModFoodComponents.CAULIFLOWER)));
     public static final Item SULPHUR = registerItem("sulphur", new Item(new Item.Settings()));
+    public static final Item ROCK = registerItem("rock", new Item(new Item.Settings()));
 
     private static Item registerItem(String name, Item item) {
         return Registry.register(Registries.ITEM, Identifier.of(ContentPack.MOD_ID, name), item);
