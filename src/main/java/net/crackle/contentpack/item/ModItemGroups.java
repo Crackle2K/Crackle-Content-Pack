@@ -19,6 +19,8 @@ public class ModItemGroups {
                         entries.add(ModItems.TANZANITE);
                         entries.add(ModItems.CAULIFLOWER);
                         entries.add(ModItems.SULPHUR);
+                        entries.add(ModItems.ORANGE);
+                        entries.add(ModItems.GOLDEN_ORANGE);
                     }).build());
 
 

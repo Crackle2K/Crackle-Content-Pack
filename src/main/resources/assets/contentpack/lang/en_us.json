@@ -2,6 +2,9 @@
   "item.contentpack.tanzanite": "Tanzanite",
   "item.contentpack.cauliflower": "Cauliflower",
   "item.contentpack.sulphur": "Sulfur",
+  "item.contentpack.rock": "Rock",
+  "item.contentpack.orange": "Orange",
+  "item.contentpack.golden_orange": "Golden Orange",
 
   "itemgroup.contentpack.contentpack_items": "Crackle's Content Pack"
 }

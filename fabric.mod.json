@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "crackle-content-pack",
+  "version": "${version}",
+  "name": "Crackle Content Pack",
+  "description": "A content pack mod",
+  "authors": [
+    "Crackle"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/crackle-content-pack/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "net.crackle.contentpack.ContentPack"
+    ]
+  },
+  "mixins": [],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "fabric-api": "*",
+    "minecraft": "~1.21"
+  },
+  "suggests": {}
+}
