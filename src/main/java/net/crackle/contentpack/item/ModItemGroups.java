@@ -21,6 +21,7 @@ public class ModItemGroups {
                         entries.add(ModItems.SULPHUR);
                         entries.add(ModItems.ORANGE);
                         entries.add(ModItems.GOLDEN_ORANGE);
+                        entries.add(ModItems.ENCHANTED_GOLDEN_ORANGE);
                     }).build());
 
 
