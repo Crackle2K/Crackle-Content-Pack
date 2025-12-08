@@ -1,0 +1,51 @@
+{
+  "id": 4,
+  "name": "charmander",
+  "types": [
+    "fire"
+  ],
+  "stats": {
+    "hp": 39,
+    "attack": 52,
+    "defense": 43,
+    "special-attack": 60,
+    "special-defense": 50,
+    "speed": 65
+  },
+  "height": 6,
+  "weight": 85,
+  "moves": [
+    {
+      "name": "mega-punch",
+      "power": 80,
+      "accuracy": 85,
+      "pp": 20,
+      "type": "normal",
+      "damage_class": "physical"
+    },
+    {
+      "name": "fire-punch",
+      "power": 75,
+      "accuracy": 100,
+      "pp": 15,
+      "type": "fire",
+      "damage_class": "physical"
+    },
+    {
+      "name": "thunder-punch",
+      "power": 75,
+      "accuracy": 100,
+      "pp": 15,
+      "type": "electric",
+      "damage_class": "physical"
+    },
+    {
+      "name": "scratch",
+      "power": 40,
+      "accuracy": 100,
+      "pp": 35,
+      "type": "normal",
+      "damage_class": "physical"
+    }
+  ]
+}

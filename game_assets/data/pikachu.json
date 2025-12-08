@@ -1,0 +1,51 @@
+{
+  "id": 25,
+  "name": "pikachu",
+  "types": [
+    "electric"
+  ],
+  "stats": {
+    "hp": 35,
+    "attack": 55,
+    "defense": 40,
+    "special-attack": 50,
+    "special-defense": 50,
+    "speed": 90
+  },
+  "height": 4,
+  "weight": 60,
+  "moves": [
+    {
+      "name": "mega-punch",
+      "power": 80,
+      "accuracy": 85,
+      "pp": 20,
+      "type": "normal",
+      "damage_class": "physical"
+    },
+    {
+      "name": "pay-day",
+      "power": 40,
+      "accuracy": 100,
+      "pp": 20,
+      "type": "normal",
+      "damage_class": "physical"
+    },
+    {
+      "name": "thunder-punch",
+      "power": 75,
+      "accuracy": 100,
+      "pp": 15,
+      "type": "electric",
+      "damage_class": "physical"
+    },
+    {
+      "name": "slam",
+      "power": 80,
+      "accuracy": 75,
+      "pp": 20,
+      "type": "normal",
+      "damage_class": "physical"
+    }
+  ]
+}

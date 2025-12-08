@@ -1,0 +1,51 @@
+{
+  "id": 19,
+  "name": "rattata",
+  "types": [
+    "normal"
+  ],
+  "stats": {
+    "hp": 30,
+    "attack": 56,
+    "defense": 35,
+    "special-attack": 25,
+    "special-defense": 35,
+    "speed": 72
+  },
+  "height": 3,
+  "weight": 35,
+  "moves": [
+    {
+      "name": "cut",
+      "power": 50,
+      "accuracy": 95,
+      "pp": 30,
+      "type": "normal",
+      "damage_class": "physical"
+    },
+    {
+      "name": "headbutt",
+      "power": 70,
+      "accuracy": 100,
+      "pp": 15,
+      "type": "normal",
+      "damage_class": "physical"
+    },
+    {
+      "name": "tackle",
+      "power": 40,
+      "accuracy": 100,
+      "pp": 35,
+      "type": "normal",
+      "damage_class": "physical"
+    },
+    {
+      "name": "body-slam",
+      "power": 85,
+      "accuracy": 100,
+      "pp": 15,
+      "type": "normal",
+      "damage_class": "physical"
+    }
+  ]
+}
