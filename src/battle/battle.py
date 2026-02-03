@@ -26,18 +26,17 @@ class BattleEvent:
 class Battle:
     """Manages a Pokemon battle between two trainers."""
 
-    def __init__(self, player: Trainer, opponent: Trainer, ai_difficulty: str = "normal"):
+    def __init__(self, player: Trainer, opponent: Trainer):
         """
         Initialize a battle.
 
         Args:
-            player: The player's trainer
+            player: The player trainer
             opponent: The opponent trainer
-            ai_difficulty: AI difficulty for the opponent
         """
         self.player = player
         self.opponent = opponent
-        self.ai = BattleAI(ai_difficulty)
+        self.ai = BattleAI()
         self.turn_count = 0
         self.is_over = False
         self.winner: Optional[Trainer] = None

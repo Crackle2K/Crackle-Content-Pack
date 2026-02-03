@@ -88,7 +88,7 @@ class MenuScreen(BaseScreen):
         """Render the menu screen."""
         self.fill_background(config.COLOR_MENU_BG)
 
-        # Draw title
+        # Draw title with shadow effect
         title_lines = [
             "POKEMON",
             "JUNO"
@@ -96,6 +96,11 @@ class MenuScreen(BaseScreen):
 
         y = 60
         for line in title_lines:
+            # Shadow
+            shadow_surface = self.font_title.render(line, True, config.COLOR_BLACK)
+            shadow_rect = shadow_surface.get_rect(centerx=config.SCREEN_WIDTH // 2 + 3, y=y + 3)
+            self.display.blit(shadow_surface, shadow_rect)
+            # Main text
             surface = self.font_title.render(line, True, config.COLOR_SECONDARY)
             rect = surface.get_rect(centerx=config.SCREEN_WIDTH // 2, y=y)
             self.display.blit(surface, rect)
@@ -103,7 +108,7 @@ class MenuScreen(BaseScreen):
 
         # Draw subtitle
         subtitle = "A Pokemon Battle Simulator"
-        subtitle_surface = self.font_small.render(subtitle, True, config.COLOR_WHITE)
+        subtitle_surface = self.font_small.render(subtitle, True, config.COLOR_LIGHT_GRAY)
         subtitle_rect = subtitle_surface.get_rect(centerx=config.SCREEN_WIDTH // 2, y=220)
         self.display.blit(subtitle_surface, subtitle_rect)
 
@@ -116,6 +121,6 @@ class MenuScreen(BaseScreen):
 
         # Draw instructions
         instructions = "Use Arrow Keys and Enter, or Click"
-        inst_surface = self.font_small.render(instructions, True, config.COLOR_GRAY)
+        inst_surface = self.font_small.render(instructions, True, config.COLOR_LIGHT_GRAY)
         inst_rect = inst_surface.get_rect(centerx=config.SCREEN_WIDTH // 2, bottom=config.SCREEN_HEIGHT - 20)
         self.display.blit(inst_surface, inst_rect)

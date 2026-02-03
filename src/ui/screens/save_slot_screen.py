@@ -138,8 +138,13 @@ class SaveSlotScreen(BaseScreen):
         """Render the save slot screen."""
         self.fill_background(config.COLOR_MENU_BG)
 
-        # Draw title
+        # Draw title with shadow
         title = "Select Save Slot"
+        # Shadow
+        shadow_surface = self.font_large.render(title, True, config.COLOR_BLACK)
+        shadow_rect = shadow_surface.get_rect(centerx=config.SCREEN_WIDTH // 2 + 2, y=62)
+        self.display.blit(shadow_surface, shadow_rect)
+        # Main title
         title_surface = self.font_large.render(title, True, config.COLOR_SECONDARY)
         title_rect = title_surface.get_rect(centerx=config.SCREEN_WIDTH // 2, y=60)
         self.display.blit(title_surface, title_rect)
@@ -156,18 +161,26 @@ class SaveSlotScreen(BaseScreen):
             slot_num = i + 1
             save_data = self.save_data.get(slot_num)
             if save_data:
-                # Draw a small indicator
+                # Draw a checkmark/indicator with glow
                 indicator_color = config.COLOR_HP_GREEN
+                indicator_pos = (button.rect.right - 30, button.rect.centery)
+                # Glow effect
+                pygame.draw.circle(self.display, (*indicator_color, 100), 
+                                 indicator_pos, 12)
+                # Main indicator
                 pygame.draw.circle(self.display, indicator_color, 
-                                 (button.rect.right - 20, button.rect.centery), 8)
+                                 indicator_pos, 8)
+                # Inner highlight
+                pygame.draw.circle(self.display, config.COLOR_WHITE, 
+                                 (indicator_pos[0] - 2, indicator_pos[1] - 2), 3)
 
         # Draw back button
         if self.selected_index == len(self.slot_buttons):
             self.back_button.is_hovered = True
         self.back_button.render(self.display, self.font_small)
 
-        # Draw instructions
+        # Draw instructions with better styling
         instructions = "Select a slot to start your journey"
-        inst_surface = self.font_small.render(instructions, True, config.COLOR_GRAY)
+        inst_surface = self.font_small.render(instructions, True, config.COLOR_LIGHT_GRAY)
         inst_rect = inst_surface.get_rect(centerx=config.SCREEN_WIDTH // 2, y=110)
         self.display.blit(inst_surface, inst_rect)

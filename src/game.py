@@ -21,6 +21,7 @@ class Game:
         self.player: Optional[Trainer] = None
         self.running = True
         self.save_slot: Optional[int] = None
+        self.battles_won = 0
 
     def run(self):
         """Main game loop."""
@@ -75,17 +76,9 @@ class Game:
 
     def _rival_battle(self):
         """Battle against the rival."""
-        # Rival gets a Pokemon strong against player's choice
-        player_pokemon = self.player.get_active_pokemon()
-        rival_starters = {
-            1: 4,   # Bulbasaur -> Charmander
-            4: 7,   # Charmander -> Squirtle
-            7: 25,  # Squirtle -> Pikachu (Electric)
-            25: 1,  # Pikachu -> Bulbasaur (Ground type counter)
-        }
-
+        # Rival gets a random Pokemon from starters
         rival = Trainer("Rival Blue", is_player=False)
-        rival_pokemon_id = rival_starters.get(player_pokemon.id, 4)
+        rival_pokemon_id = random.choice(self.STARTERS)
         rival.add_pokemon(Pokemon(rival_pokemon_id, level=5))
 
         self.ui.clear_screen()
@@ -93,7 +86,10 @@ class Game:
         self.ui.show_message(f'"I\'ll show you how it\'s done, {self.player.name}!"')
         self.ui.wait_for_input()
 
-        self._run_battle(rival, "normal")
+        self._run_battle(rival)
+        
+        # Start continuous battle loop
+        self._start_battle_loop()
 
     def _save_game(self):
         """Save the current game state."""
@@ -110,16 +106,21 @@ class Game:
             'player_name': self.player.name,
             'pokemon_count': len(self.player.team),
             'pokemon_ids': [p.id for p in self.player.team],
-            'pokemon_levels': [p.level for p in self.player.team]
+            'pokemon_levels': [p.level for p in self.player.team],
+            'battles_won': self.battles_won
         }
         
         save_file = save_folder / f"save_{self.save_slot}.json"
         with open(save_file, 'w') as f:
             json.dump(save_data, f, indent=2)
 
-    def _run_battle(self, opponent: Trainer, difficulty: str = "normal"):
-        """Run a battle against an opponent."""
-        battle = Battle(self.player, opponent, difficulty)
+    def _run_battle(self, opponent: Trainer) -> bool:
+        """Run a battle against an opponent.
+        
+        Returns:
+            True if player won, False if player lost
+        """
+        battle = Battle(self.player, opponent)
 
         # Initialize battle screen
         self.ui.start_battle(battle)
@@ -155,6 +156,89 @@ class Game:
 
         self.ui.show_battle_result(battle)
         self.ui.wait_for_input()
+        
+        # Check if player won
+        player_won = battle.winner == self.player
+        
+        if player_won:
+            # Grant XP and heal all Pokemon
+            self._grant_battle_rewards(opponent)
+        
+        return player_won
+    
+    def _grant_battle_rewards(self, opponent: Trainer):
+        """Grant XP and heal Pokemon after winning a battle."""
+        # Calculate XP based on opponent's team
+        total_xp = sum(p.level * 50 for p in opponent.team)
+        xp_per_pokemon = total_xp // len(self.player.team)
+        
+        self.ui.show_message(f"Victory! Your Pokemon gained {xp_per_pokemon} XP each!")
+        
+        # Grant XP to all player Pokemon
+        for pokemon in self.player.team:
+            # Simple level up system
+            pokemon.level += max(1, xp_per_pokemon // 100)
+            if pokemon.level > 100:
+                pokemon.level = 100
+            
+            # Recalculate stats
+            pokemon.max_hp = pokemon._calculate_hp()
+            pokemon.attack = pokemon._calculate_stat("attack")
+            pokemon.defense = pokemon._calculate_stat("defense")
+            pokemon.sp_attack = pokemon._calculate_stat("sp_attack")
+            pokemon.sp_defense = pokemon._calculate_stat("sp_defense")
+            pokemon.speed = pokemon._calculate_stat("speed")
+        
+        # Heal all Pokemon to full HP
+        self.player.heal_team()
+        self.ui.show_message("Your Pokemon have been healed to full health!")
+        self.ui.wait_for_input()
+    
+    def _start_battle_loop(self):
+        """Start the continuous battle loop."""
+        available_ids = get_available_pokemon_ids()
+        
+        while self.running:
+            self.battles_won += 1
+            
+            # Create a random opponent
+            opponent_name = random.choice([
+                "Youngster", "Lass", "Bug Catcher", "Swimmer",
+                "Hiker", "Camper", "Picnicker", "Beauty",
+                "Gentleman", "School Kid", "Ace Trainer"
+            ])
+            opponent = Trainer(f"{opponent_name} #{self.battles_won}", is_player=False)
+            
+            # Calculate opponent level based on battles won
+            base_level = self.player.get_active_pokemon().level
+            level_range = max(1, self.battles_won // 2)
+            
+            # Give opponent 1-3 random Pokemon
+            num_pokemon = min(3, 1 + self.battles_won // 3)
+            for _ in range(num_pokemon):
+                random_id = random.choice(available_ids)
+                level = random.randint(base_level - level_range, base_level + level_range)
+                level = max(5, min(100, level))
+                opponent.add_pokemon(Pokemon(random_id, level=level))
+            
+            # Save game before battle
+            self._save_game()
+            
+            # Show opponent
+            self.ui.clear_screen()
+            self.ui.show_message(f"{opponent.name} wants to battle!")
+            self.ui.show_message(f"Battle #{self.battles_won}")
+            self.ui.wait_for_input()
+            
+            # Run the battle
+            won = self._run_battle(opponent)
+            
+            if not won:
+                self.ui.show_message("You were defeated!")
+                self.ui.show_message("Game Over!")
+                self.ui.wait_for_input()
+                self.running = False
+                break
 
 
 def main():

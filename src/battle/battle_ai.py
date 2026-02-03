@@ -13,14 +13,11 @@ if TYPE_CHECKING:
 class BattleAI:
     """Simple AI for controlling enemy trainers."""
 
-    def __init__(self, difficulty: str = "normal"):
+    def __init__(self):
         """
-        Initialize the AI.
-
-        Args:
-            difficulty: "easy", "normal", or "hard"
+        Initialize the battle AI.
         """
-        self.difficulty = difficulty
+        pass
 
     def choose_action(self, trainer: "Trainer", opponent_pokemon: "Pokemon") -> tuple[str, int]:
         """
@@ -35,15 +32,10 @@ class BattleAI:
         """
         pokemon = trainer.get_active_pokemon()
 
-        if self.difficulty == "easy":
-            return self._choose_random(pokemon)
-        elif self.difficulty == "hard":
+        # Balanced strategy: 60% smart, 40% random
+        if random.random() < 0.6:
             return self._choose_smart(trainer, pokemon, opponent_pokemon)
-        else:
-            # Normal difficulty: mix of random and smart
-            if random.random() < 0.5:
-                return self._choose_smart(trainer, pokemon, opponent_pokemon)
-            return self._choose_random(pokemon)
+        return self._choose_random(pokemon)
 
     def _choose_random(self, pokemon: "Pokemon") -> tuple[str, int]:
         """Choose a random move."""
@@ -71,18 +63,17 @@ class BattleAI:
                 best_move_index = i
 
         # Consider switching if current Pokemon is at a type disadvantage
-        if self.difficulty == "hard":
-            available = trainer.get_available_pokemon()
-            if len(available) > 1 and best_score < 50:
-                # Look for a better matchup
-                for idx, poke in available:
-                    if idx == trainer.active_pokemon_index:
-                        continue
-                    # Check if this Pokemon has type advantage
-                    for poke_type in poke.types:
-                        eff = TypeChart.get_effectiveness(poke_type, opponent.types)
-                        if eff > 1.0:
-                            return ("switch", idx)
+        available = trainer.get_available_pokemon()
+        if len(available) > 1 and best_score < 50:
+            # Look for a better matchup
+            for idx, poke in available:
+                if idx == trainer.active_pokemon_index:
+                    continue
+                # Check if this Pokemon has type advantage
+                for poke_type in poke.types:
+                    eff = TypeChart.get_effectiveness(poke_type, opponent.types)
+                    if eff > 1.0:
+                        return ("switch", idx)
 
         return ("move", best_move_index)
 
@@ -99,20 +90,16 @@ class BattleAI:
         """
         available = trainer.get_available_pokemon()
 
-        if self.difficulty == "hard":
-            # Find best type matchup
-            best_idx = available[0][0]
-            best_score = 0
+        # Find best type matchup (balanced strategy)
+        best_idx = available[0][0]
+        best_score = 0
 
-            for idx, pokemon in available:
-                score = 0
-                for poke_type in pokemon.types:
-                    score += TypeChart.get_effectiveness(poke_type, opponent_pokemon.types)
-                if score > best_score:
-                    best_score = score
-                    best_idx = idx
+        for idx, pokemon in available:
+            score = 0
+            for poke_type in pokemon.types:
+                score += TypeChart.get_effectiveness(poke_type, opponent_pokemon.types)
+            if score > best_score:
+                best_score = score
+                best_idx = idx
 
-            return best_idx
-
-        # Random for easy/normal
-        return random.choice(available)[0]
+        return best_idx
