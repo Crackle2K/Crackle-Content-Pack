@@ -140,6 +140,7 @@ assets/*
 !assets/.gitkeep
 
 # IDE settings
+.claude/
 .vscode/
 .idea/
 *.swp

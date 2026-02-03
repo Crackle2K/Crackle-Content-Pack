@@ -1,1 +1,2 @@
 requests>=2.31.0
+pygame>=2.5.0
