@@ -4,7 +4,7 @@ import random
 from typing import Optional
 
 from src.core.type_chart import PokemonType, TypeChart
-from src.core.pokemon_data import POKEMON_DATA
+from src.core.pokemon_data import get_pokemon_data, is_pokemon_available
 from src.entities.move import Move
 
 
@@ -20,10 +20,10 @@ class Pokemon:
             level: The Pokemon's level (1-100)
             nickname: Optional nickname for the Pokemon
         """
-        if pokemon_id not in POKEMON_DATA:
+        if not is_pokemon_available(pokemon_id):
             raise ValueError(f"Unknown Pokemon ID: {pokemon_id}")
 
-        data = POKEMON_DATA[pokemon_id]
+        data = get_pokemon_data(pokemon_id)
 
         self.id = pokemon_id
         self.name = data["name"]

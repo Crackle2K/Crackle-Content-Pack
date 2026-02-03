@@ -40,13 +40,6 @@ class MenuScreen(BaseScreen):
             Button(
                 button_x, button_y_start + button_spacing,
                 button_width, button_height,
-                "Quick Battle",
-                font=self.font_large,
-                on_click=lambda: self._set_result("quick_battle")
-            ),
-            Button(
-                button_x, button_y_start + button_spacing * 2,
-                button_width, button_height,
                 "Exit",
                 font=self.font_large,
                 color=config.COLOR_ACCENT,

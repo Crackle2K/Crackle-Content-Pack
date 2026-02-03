@@ -139,6 +139,9 @@ cython_debug/
 assets/*
 !assets/.gitkeep
 
+# User Saves
+saves/
+
 # IDE settings
 .claude/
 .vscode/

@@ -85,8 +85,8 @@ class AssetManager:
         if cache_key in self._font_cache:
             return self._font_cache[cache_key]
 
-        # Try to use a nice system font, fall back to default
-        font_names = ["arial", "helvetica", "sans-serif"]
+        # Try to use sleek modern fonts, fall back to default
+        font_names = ["Segoe UI", "Roboto", "SF Pro Display", "Inter", "Open Sans", "Helvetica Neue", "arial"]
 
         font = None
         for name in font_names:
@@ -110,11 +110,12 @@ class AssetManager:
             pokemon_ids: List of Pokemon IDs to preload
             scale: Scale factor for sprites
         """
-        from src.core.pokemon_data import POKEMON_DATA
+        from src.core.pokemon_data import get_pokemon_data, is_pokemon_available
 
         for pid in pokemon_ids:
-            if pid in POKEMON_DATA:
-                self.get_sprite(pid, POKEMON_DATA[pid]["name"], scale)
+            if is_pokemon_available(pid):
+                data = get_pokemon_data(pid)
+                self.get_sprite(pid, data["name"], scale)
 
     def clear_cache(self):
         """Clear all cached assets."""

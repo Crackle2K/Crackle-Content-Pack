@@ -8,6 +8,7 @@ from src.ui.asset_manager import AssetManager
 from src.ui.screens.menu_screen import MenuScreen
 from src.ui.screens.selection_screen import SelectionScreen, NameInputScreen
 from src.ui.screens.battle_screen import BattleScreen
+from src.ui.screens.save_slot_screen import SaveSlotScreen
 from src.entities.pokemon import Pokemon
 from src.entities.trainer import Trainer
 from src.battle.battle import Battle, BattleEvent
@@ -47,11 +48,22 @@ class PygameUI:
         Show the main menu and get selection.
 
         Returns:
-            "new_game", "quick_battle", or "exit"
+            "new_game" or "exit"
         """
         screen = MenuScreen(self.display, self.assets)
         result = screen.run()
         return result if result else "exit"
+
+    def show_save_slot_selection(self) -> Optional[int]:
+        """
+        Show save slot selection screen.
+
+        Returns:
+            Selected slot number (1-4), or None if cancelled
+        """
+        screen = SaveSlotScreen(self.display, self.assets)
+        result = screen.run()
+        return result
 
     def get_player_name(self) -> str:
         """

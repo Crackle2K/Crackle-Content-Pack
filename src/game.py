@@ -7,7 +7,7 @@ from src.entities.pokemon import Pokemon
 from src.entities.trainer import Trainer
 from src.battle.battle import Battle
 from src.ui.pygame_ui import PygameUI
-from src.core.pokemon_data import POKEMON_DATA
+from src.core.pokemon_data import get_available_pokemon_ids
 
 
 class Game:
@@ -20,6 +20,7 @@ class Game:
         self.ui = PygameUI()
         self.player: Optional[Trainer] = None
         self.running = True
+        self.save_slot: Optional[int] = None
 
     def run(self):
         """Main game loop."""
@@ -30,9 +31,10 @@ class Game:
                 choice = self.ui.show_main_menu()
 
                 if choice == "new_game":
-                    self._new_game()
-                elif choice == "quick_battle":
-                    self._quick_battle()
+                    # Show save slot selection
+                    slot = self.ui.show_save_slot_selection()
+                    if slot is not None:
+                        self._new_game(slot)
                 elif choice == "exit":
                     self.running = False
 
@@ -40,9 +42,14 @@ class Game:
         finally:
             self.ui.quit()
 
-    def _new_game(self):
-        """Start a new game."""
+    def _new_game(self, slot: int):
+        """Start a new game.
+        
+        Args:
+            slot: Save slot number (1-4)
+        """
         self.ui.clear_screen()
+        self.save_slot = slot
 
         # Get player name
         name = self.ui.get_player_name()
@@ -59,6 +66,9 @@ class Game:
 
         self.ui.show_message(f"Excellent choice! You received {starter.name}!")
         self.ui.wait_for_input()
+
+        # Save game
+        self._save_game()
 
         # Start with a rival battle
         self._rival_battle()
@@ -85,50 +95,27 @@ class Game:
 
         self._run_battle(rival, "normal")
 
-    def _quick_battle(self):
-        """Start a quick battle with random Pokemon."""
-        self.ui.clear_screen()
-
-        # Create temporary player
-        name = self.ui.get_player_name()
-        player = Trainer(name, is_player=True)
-
-        # Let player choose from random Pokemon
-        available_ids = list(POKEMON_DATA.keys())
-        random_ids = random.sample(available_ids, min(6, len(available_ids)))
-        pokemon_choices = [Pokemon(pid, level=random.randint(20, 50)) for pid in random_ids]
-
-        self.ui.show_message("Choose your Pokemon for battle:")
-
-        # Choose 3 Pokemon
-        selected = []
-        for i in range(3):
-            remaining = [p for p in pokemon_choices if p not in selected]
-            if not remaining:
-                break
-
-            choice = self.ui.show_pokemon_selection(
-                remaining,
-                f"Choose Pokemon {i + 1}/3:"
-            )
-            selected.append(remaining[choice])
-
-        for pokemon in selected:
-            player.add_pokemon(pokemon)
-
-        # Create opponent
-        opponent = Trainer("Gym Leader", is_player=False)
-        opponent_ids = random.sample(available_ids, 3)
-        avg_level = sum(p.level for p in selected) // len(selected)
-
-        for pid in opponent_ids:
-            opponent.add_pokemon(Pokemon(pid, level=random.randint(avg_level - 5, avg_level + 5)))
-
-        self.player = player
-        self.ui.show_message("Gym Leader wants to battle!")
-        self.ui.wait_for_input()
-
-        self._run_battle(opponent, "normal")
+    def _save_game(self):
+        """Save the current game state."""
+        import json
+        from pathlib import Path
+        
+        if not hasattr(self, 'save_slot') or self.player is None:
+            return
+        
+        save_folder = Path("saves")
+        save_folder.mkdir(exist_ok=True)
+        
+        save_data = {
+            'player_name': self.player.name,
+            'pokemon_count': len(self.player.team),
+            'pokemon_ids': [p.id for p in self.player.team],
+            'pokemon_levels': [p.level for p in self.player.team]
+        }
+        
+        save_file = save_folder / f"save_{self.save_slot}.json"
+        with open(save_file, 'w') as f:
+            json.dump(save_data, f, indent=2)
 
     def _run_battle(self, opponent: Trainer, difficulty: str = "normal"):
         """Run a battle against an opponent."""

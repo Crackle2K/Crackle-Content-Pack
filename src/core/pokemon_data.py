@@ -187,3 +187,59 @@ POKEMON_DATA = {
         "learnable_moves": ["pound", "psychic", "shadow_ball", "thunder", "ice_beam", "flamethrower", "surf", "earthquake"]
     },
 }
+
+
+# Helper functions to get Pokemon data
+# These will use JSON loader if available, otherwise fall back to POKEMON_DATA
+def get_pokemon_data(pokemon_id: int):
+    """
+    Get Pokemon data by ID, preferring JSON loader if available.
+    
+    Args:
+        pokemon_id: The Pokemon's national dex number
+        
+    Returns:
+        Dictionary containing Pokemon data
+    """
+    try:
+        from .pokemon_loader import get_pokemon_loader
+        loader = get_pokemon_loader()
+        
+        if loader.is_data_available():
+            # Use loader data
+            return {
+                "name": loader.get_pokemon_name(pokemon_id),
+                "types": loader.get_pokemon_types(pokemon_id),
+                "base_stats": loader.get_base_stats(pokemon_id),
+                "learnable_moves": loader.get_learnable_moves(pokemon_id, level_limit=50)
+            }
+    except Exception as e:
+        print(f"Warning: Could not load Pokemon data from JSON: {e}")
+    
+    # Fall back to hardcoded data
+    return POKEMON_DATA.get(pokemon_id, {
+        "name": f"Pokemon #{pokemon_id}",
+        "types": [PokemonType.NORMAL],
+        "base_stats": {"hp": 50, "attack": 50, "defense": 50, "sp_attack": 50, "sp_defense": 50, "speed": 50},
+        "learnable_moves": ["tackle"]
+    })
+
+
+def get_available_pokemon_ids():
+    """Get list of all available Pokemon IDs."""
+    try:
+        from .pokemon_loader import get_pokemon_loader
+        loader = get_pokemon_loader()
+        
+        if loader.is_data_available():
+            return loader.get_all_pokemon_ids()
+    except Exception:
+        pass
+    
+    # Fall back to hardcoded data
+    return sorted(POKEMON_DATA.keys())
+
+
+def is_pokemon_available(pokemon_id: int) -> bool:
+    """Check if a Pokemon ID is available."""
+    return pokemon_id in get_available_pokemon_ids()
