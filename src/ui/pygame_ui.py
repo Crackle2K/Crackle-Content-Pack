@@ -14,6 +14,7 @@ from src.ui.screens.shop_screen import ShopScreen
 from src.ui.screens.inventory_screen import InventoryScreen
 from src.ui.screens.pokemon_center_screen import PokemonCenterScreen
 from src.ui.screens.settings_screen import SettingsScreen
+from src.ui.screens.pokemon_party_screen import PokemonPartyScreen
 from src.entities.pokemon import Pokemon
 from src.entities.trainer import Trainer
 from src.battle.battle import Battle, BattleEvent
@@ -112,6 +113,12 @@ class PygameUI:
 
     def show_pokemon_center(self, player: Trainer):
         screen = PokemonCenterScreen(self.display, self.assets, player)
+        result = screen.run()
+        if result is None:
+            self.quit_requested = True
+
+    def show_pokemon_party(self, player: Trainer):
+        screen = PokemonPartyScreen(self.display, self.assets, player)
         result = screen.run()
         if result is None:
             self.quit_requested = True

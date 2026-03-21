@@ -7,6 +7,7 @@ from typing import Optional
 
 from src.entities.pokemon import Pokemon
 from src.entities.trainer import Trainer
+from src.entities.move import Move
 from src.battle.battle import Battle
 from src.ui.pygame_ui import PygameUI
 from src.core.pokemon_data import get_available_pokemon_ids
@@ -102,11 +103,27 @@ class Game:
         self.player.money = data.get("money", self.STARTING_MONEY)
         self.player.items = data.get("items", {})
 
-        ids    = data.get("pokemon_ids",    [])
-        levels = data.get("pokemon_levels", [])
-        for pid, lvl in zip(ids, levels):
+        ids        = data.get("pokemon_ids",    [])
+        levels     = data.get("pokemon_levels", [])
+        saved_moves = data.get("pokemon_moves", [])
+        saved_xp    = data.get("pokemon_xp",    [])
+        for i, (pid, lvl) in enumerate(zip(ids, levels)):
             try:
-                self.player.add_pokemon(Pokemon(pid, level=lvl))
+                pk = Pokemon(pid, level=lvl)
+                # Restore XP progress
+                if i < len(saved_xp):
+                    pk.experience_points = saved_xp[i]
+                # Restore custom move selection
+                if i < len(saved_moves) and saved_moves[i]:
+                    restored = []
+                    for mn in saved_moves[i][:4]:
+                        try:
+                            restored.append(Move(mn))
+                        except ValueError:
+                            pass
+                    if restored:
+                        pk.moves = restored
+                self.player.add_pokemon(pk)
             except Exception:
                 pass
 
@@ -172,6 +189,9 @@ class Game:
 
             if action == "battle":
                 self._do_encounter(available_ids)
+            elif action == "pokemon":
+                self.ui.show_pokemon_party(self.player)
+                self._save_game()
             elif action == "shop":
                 self.ui.show_shop(self.player)
             elif action == "inventory":
@@ -211,7 +231,9 @@ class Game:
                            is_player=False, is_wild=True)
 
         for _ in range(num_pokemon):
-            target = random.randint(max(5, avg_level - 5), min(100, avg_level - 1))
+            lo = max(1, avg_level - 5)
+            hi = min(100, avg_level)
+            target = random.randint(lo, hi)
             pid, level = pick_encounter_pokemon(available_ids, target)
             opponent.add_pokemon(Pokemon(pid, level=level))
 
@@ -249,6 +271,8 @@ class Game:
             'pokemon_count':  len(self.player.team),
             'pokemon_ids':    [p.id    for p in self.player.team],
             'pokemon_levels': [p.level for p in self.player.team],
+            'pokemon_moves':  [[m.name for m in p.moves] for p in self.player.team],
+            'pokemon_xp':     [p.experience_points for p in self.player.team],
             'battles_won':    self.battles_won,
             'money':          self.player.money,
             'items':          self.player.items,

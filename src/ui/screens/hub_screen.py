@@ -60,8 +60,14 @@ class HubScreen(BaseScreen):
         ]
         self._footer_rect = pygame.Rect(0, content_bot, config.SCREEN_WIDTH, _FOOTER_H)
 
-        self._hovered: Optional[int] = None   # 0-3 for quads, 4 for footer
+        self._hovered: Optional[int] = None   # 0-3 for quads
         self._footer_hovered = False
+        self._team_hovered   = False
+
+        # Split footer: left = My Team, right = Settings
+        split = config.SCREEN_WIDTH // 3
+        self._team_rect     = pygame.Rect(0,     content_bot, split,                       _FOOTER_H)
+        self._footer_rect   = pygame.Rect(split, content_bot, config.SCREEN_WIDTH - split, _FOOTER_H)
 
     # ------------------------------------------------------------------
     # Event / Update / Render
@@ -69,10 +75,13 @@ class HubScreen(BaseScreen):
 
     def handle_event(self, event: pygame.event.Event) -> Optional[Any]:
         if event.type == pygame.MOUSEMOTION:
-            self._hovered = self._quad_at(event.pos)
+            self._hovered        = self._quad_at(event.pos)
             self._footer_hovered = self._footer_rect.collidepoint(event.pos)
+            self._team_hovered   = self._team_rect.collidepoint(event.pos)
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+            if self._team_rect.collidepoint(event.pos):
+                return "pokemon"
             if self._footer_rect.collidepoint(event.pos):
                 return "settings"
             idx = self._quad_at(event.pos)
@@ -88,8 +97,8 @@ class HubScreen(BaseScreen):
             }
             if event.key in key_map:
                 return _QUADRANTS[key_map[event.key]][2]
-            if event.key in (pygame.K_5, pygame.K_KP5, pygame.K_s):
-                pass  # 's' is used for scroll in other screens; ignore here
+            if event.key in (pygame.K_5, pygame.K_KP5, pygame.K_t):
+                return "pokemon"
             if event.key == pygame.K_ESCAPE:
                 return "settings"
 
@@ -98,8 +107,9 @@ class HubScreen(BaseScreen):
     def update(self, dt: float):
         self.star_time += dt
         pos = pygame.mouse.get_pos()
-        self._hovered = self._quad_at(pos)
+        self._hovered        = self._quad_at(pos)
         self._footer_hovered = self._footer_rect.collidepoint(pos)
+        self._team_hovered   = self._team_rect.collidepoint(pos)
 
     def render(self):
         self.display.fill(config.COLOR_MENU_BG)
@@ -165,21 +175,36 @@ class HubScreen(BaseScreen):
                               (rect.right - hint_surf.get_width() - 8,
                                rect.bottom - hint_surf.get_height() - 6))
 
-        # Footer settings strip
+        # Footer — left: My Team, right: Settings
+        pygame.draw.line(self.display, (90, 90, 115),
+                         (0, self._team_rect.top),
+                         (config.SCREEN_WIDTH, self._team_rect.top), 1)
+
+        # My Team tile
+        team_col = (60, 90, 130) if self._team_hovered else (42, 65, 95)
+        pygame.draw.rect(self.display, team_col, self._team_rect)
+        pygame.draw.line(self.display, (90, 90, 115),
+                         (self._team_rect.right, self._team_rect.top),
+                         (self._team_rect.right, self._team_rect.bottom), 1)
+        team_cx = self._team_rect.centerx - 30
+        team_cy = self._team_rect.centery
+        self._draw_icon("pack", team_cx, team_cy, self._team_hovered)
+        team_surf = self.font_small.render(
+            "MY TEAM  [T]", True,
+            (210, 230, 255) if self._team_hovered else (150, 175, 215))
+        self.display.blit(team_surf,
+                          (team_cx + 22,
+                           self._team_rect.centery - team_surf.get_height() // 2))
+
+        # Settings tile
         footer_col = (75, 75, 95) if self._footer_hovered else (55, 55, 72)
         pygame.draw.rect(self.display, footer_col, self._footer_rect)
-        pygame.draw.line(self.display, (90, 90, 115),
-                         (0, self._footer_rect.top),
-                         (config.SCREEN_WIDTH, self._footer_rect.top), 1)
-
-        gear_cx = config.SCREEN_WIDTH // 2 - 60
+        gear_cx = self._footer_rect.centerx - 60
         gear_cy = self._footer_rect.centery
         self._draw_icon("gear", gear_cx, gear_cy, self._footer_hovered)
-
-        settings_surf = self.font_small.render("SETTINGS  /  SAVE & QUIT",
-                                               True,
-                                               (210, 215, 230) if self._footer_hovered
-                                               else (160, 170, 190))
+        settings_surf = self.font_small.render(
+            "SETTINGS  /  SAVE & QUIT", True,
+            (210, 215, 230) if self._footer_hovered else (160, 170, 190))
         self.display.blit(settings_surf,
                           (gear_cx + 22,
                            self._footer_rect.centery - settings_surf.get_height() // 2))

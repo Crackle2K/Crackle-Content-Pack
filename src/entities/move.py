@@ -39,7 +39,8 @@ class Move:
             self.current_pp   = self.max_pp
             self.priority     = int(d.get("priority", 0))
             self.description  = d.get("description", "")
-            self.stat_effects = d.get("stat_effects", [])
+            # JSON may lack stat_effects; fall back to Python data dict if so
+            self.stat_effects = d.get("stat_effects") or MOVES_DATA.get(move_name, {}).get("stat_effects", [])
 
         elif move_name in MOVES_DATA:
             d                 = MOVES_DATA[move_name]

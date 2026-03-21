@@ -100,6 +100,13 @@ class Pokemon:
             except ValueError:
                 pass  # Skip moves not in either data source
 
+    def get_available_moves(self) -> list[str]:
+        """Return all move names learnable at or below this Pokemon's current level."""
+        learnset = self._learnset()
+        if learnset:
+            return [e["move"] for e in learnset if e["level"] <= self.level]
+        return list(self.learnable_moves)
+
     def _moves_at_level(self, level: int) -> list[str]:
         """Return move names learned at exactly this level (from learnset JSON)."""
         return [e["move"] for e in self._learnset() if e["level"] == level]
