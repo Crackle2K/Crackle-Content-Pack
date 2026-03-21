@@ -126,19 +126,25 @@ class SelectionScreen(BaseScreen):
         """Render the selection screen."""
         self.fill_background(config.COLOR_BG)
 
-        # Draw title
-        self.draw_text_centered(self.title, 30, self.font_large)
-
-        # Draw separator
-        pygame.draw.line(
+        # Header bar
+        pygame.draw.rect(
             self.display,
-            config.COLOR_GRAY,
-            (50, 80),
-            (config.SCREEN_WIDTH - 50, 80),
-            2
+            config.COLOR_PRIMARY,
+            (0, 0, config.SCREEN_WIDTH, 72)
+        )
+        # Header title (white text)
+        title_surf = self.font_large.render(self.title, True, config.COLOR_WHITE)
+        title_rect = title_surf.get_rect(centerx=config.SCREEN_WIDTH // 2, centery=36)
+        self.display.blit(title_surf, title_rect)
+
+        # Thin accent line below header
+        pygame.draw.rect(
+            self.display,
+            config.COLOR_SECONDARY,
+            (0, 72, config.SCREEN_WIDTH, 3)
         )
 
-        # Draw cards
+        # Draw cards (shifted down to clear header)
         for card in self.cards:
             card.render(self.display, self.font_medium, self.font_small)
 
@@ -218,6 +224,23 @@ class NameInputScreen(BaseScreen):
     def render(self):
         """Render the name input screen."""
         self.fill_background(config.COLOR_BG)
+
+        # Header bar
+        pygame.draw.rect(
+            self.display,
+            config.COLOR_PRIMARY,
+            (0, 0, config.SCREEN_WIDTH, 72)
+        )
+        pygame.draw.rect(
+            self.display,
+            config.COLOR_SECONDARY,
+            (0, 72, config.SCREEN_WIDTH, 3)
+        )
+        header_surf = self.font_large.render("New Trainer", True, config.COLOR_WHITE)
+        self.display.blit(
+            header_surf,
+            header_surf.get_rect(centerx=config.SCREEN_WIDTH // 2, centery=36)
+        )
 
         # Draw title
         self.draw_text_centered("What is your name, trainer?", 150, self.font_large)

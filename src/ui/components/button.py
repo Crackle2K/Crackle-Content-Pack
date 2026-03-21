@@ -105,6 +105,15 @@ class Button:
         # Draw button background with rounded corners
         pygame.draw.rect(surface, color, self.rect, border_radius=8)
 
+        # Inner top highlight (subtle gloss effect)
+        if not self.disabled and not self.is_pressed:
+            highlight_h = max(self.rect.height // 3, 6)
+            highlight_surf = pygame.Surface(
+                (self.rect.width - 6, highlight_h), pygame.SRCALPHA
+            )
+            highlight_surf.fill((255, 255, 255, 38))
+            surface.blit(highlight_surf, (self.rect.x + 3, self.rect.y + 3))
+
         # Draw border
         border_color = config.COLOR_DARK_GRAY if self.disabled else config.COLOR_BLACK
         pygame.draw.rect(surface, border_color, self.rect, width=2, border_radius=8)
