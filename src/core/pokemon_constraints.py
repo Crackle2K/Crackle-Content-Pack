@@ -175,12 +175,18 @@ def pick_encounter_pokemon(
     if rng is None:
         rng = random
 
-    # Allow species whose minimum evolution level is within target + 12
-    ceiling = target_level + 12
+    # Only species whose min-level is AT OR BELOW the target so they actually
+    # appear at that level (prevents a level-5 encounter with Ivysaur/Pidgeotto).
     valid = [
         pid for pid in available_ids
-        if pid not in LEGENDARY_IDS and get_min_level(pid) <= ceiling
+        if pid not in LEGENDARY_IDS and get_min_level(pid) <= target_level
     ]
+    if not valid:
+        # Small tolerance fallback (e.g. very low target levels)
+        valid = [
+            pid for pid in available_ids
+            if pid not in LEGENDARY_IDS and get_min_level(pid) <= target_level + 5
+        ]
     if not valid:
         valid = [pid for pid in available_ids if pid not in LEGENDARY_IDS]
     if not valid:

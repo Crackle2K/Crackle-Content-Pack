@@ -42,6 +42,7 @@ class Battle:
         self.winner: Optional[Trainer] = None
         self.events: list[BattleEvent] = []
         self.player_battlers: set = set()  # Pokemon objects that fought for the player
+        self.caught_pokemon = None         # Set when a wild Pokemon is caught
 
     def start(self) -> list[BattleEvent]:
         """Start the battle and return initial events."""
@@ -213,6 +214,70 @@ class Battle:
                 self.is_over = True
                 self.winner = self.opponent
                 self._add_event("battle_end", f"{self.player.name} was defeated!")
+
+    def execute_ai_turn(self) -> list[BattleEvent]:
+        """Execute only the AI's turn (player spent their turn on an item or failed catch)."""
+        self.events = []
+        opponent_pokemon = self.opponent.get_active_pokemon()
+        player_pokemon  = self.player.get_active_pokemon()
+        if opponent_pokemon and not opponent_pokemon.is_fainted:
+            ai_action, ai_idx = self.ai.choose_action(self.opponent, player_pokemon)
+            if ai_action == "move":
+                opp_move = opponent_pokemon.moves[ai_idx]
+                self._execute_move(opponent_pokemon, player_pokemon, opp_move,
+                                   self.opponent, self.player)
+        self._handle_fainting()
+        return self.events
+
+    def attempt_catch(self, ball_slug: str) -> tuple[bool, list[BattleEvent]]:
+        """
+        Attempt to catch the opponent's active Pokemon.
+
+        Returns:
+            (caught: bool, events: list[BattleEvent])
+        """
+        self.events = []
+        opponent_pokemon = self.opponent.get_active_pokemon()
+
+        if not self.opponent.is_wild:
+            self._add_event("catch_fail", "You can't catch a trainer's Pokemon!")
+            # AI still attacks
+            ai_events = self.execute_ai_turn()
+            self.events.extend(ai_events)
+            return False, self.events
+
+        # Simplified catch formula: lower HP → higher chance; better ball → more tries
+        hp_ratio  = opponent_pokemon.current_hp / max(1, opponent_pokemon.max_hp)
+        ball_mult = {"poke-ball": 1.0, "great-ball": 1.5, "ultra-ball": 2.0}.get(ball_slug, 1.0)
+        catch_p   = min(0.95, (1.0 - hp_ratio * 0.65) * ball_mult)
+
+        shakes = 0
+        for _ in range(3):
+            if random.random() < catch_p:
+                shakes += 1
+            else:
+                break
+
+        if shakes == 3:
+            self._add_event("catch_success",
+                            f"Gotcha! {opponent_pokemon.get_display_name()} was caught!")
+            self.is_over   = True
+            self.winner    = self.player
+            self.caught_pokemon = opponent_pokemon
+            return True, self.events
+        else:
+            dot = "." * shakes
+            self._add_event("catch_fail",
+                            f"Oh no! {opponent_pokemon.get_display_name()} broke free{dot}")
+            # AI attacks after failed catch
+            player_pokemon = self.player.get_active_pokemon()
+            ai_action, ai_idx = self.ai.choose_action(self.opponent, player_pokemon)
+            if ai_action == "move":
+                self._execute_move(opponent_pokemon, player_pokemon,
+                                   opponent_pokemon.moves[ai_idx],
+                                   self.opponent, self.player)
+            self._handle_fainting()
+            return False, self.events
 
     def get_player_options(self) -> dict:
         """Get available options for the player."""

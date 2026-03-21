@@ -9,7 +9,7 @@ class Trainer:
 
     MAX_TEAM_SIZE = 6
 
-    def __init__(self, name: str, is_player: bool = False):
+    def __init__(self, name: str, is_player: bool = False, is_wild: bool = False):
         """
         Initialize a trainer.
 
@@ -19,6 +19,7 @@ class Trainer:
         """
         self.name = name
         self.is_player = is_player
+        self.is_wild = is_wild
         self.team: list[Pokemon] = []
         self.active_pokemon_index: int = 0
         self.money: int = 0
