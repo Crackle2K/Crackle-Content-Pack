@@ -128,11 +128,31 @@ class MessageBox:
         """
         use_font = font or self.font
 
+        # Drop shadow
+        shadow_surf = pygame.Surface(
+            (self.rect.width, self.rect.height), pygame.SRCALPHA
+        )
+        pygame.draw.rect(
+            shadow_surf, (0, 0, 0, 55),
+            shadow_surf.get_rect(), border_radius=10
+        )
+        surface.blit(shadow_surf, (self.rect.x + 4, self.rect.y + 4))
+
         # Draw background
-        pygame.draw.rect(surface, config.COLOR_WHITE, self.rect, border_radius=8)
+        pygame.draw.rect(surface, config.COLOR_WHITE, self.rect, border_radius=10)
+
+        # Subtle inner top highlight
+        inner_w = self.rect.width - 8
+        inner_h = 6
+        inner_surf = pygame.Surface((inner_w, inner_h), pygame.SRCALPHA)
+        inner_surf.fill((255, 255, 255, 100))
+        surface.blit(inner_surf, (self.rect.x + 4, self.rect.y + 4))
 
         # Draw border
-        pygame.draw.rect(surface, config.COLOR_BLACK, self.rect, width=3, border_radius=8)
+        pygame.draw.rect(
+            surface, config.COLOR_INFO_BOX_BORDER,
+            self.rect, width=2, border_radius=10
+        )
 
         # Draw text
         if use_font and self.current_message:
@@ -163,14 +183,14 @@ class MessageBox:
                 surface.blit(text_surface, (self.rect.x + 20, self.rect.y + y_offset))
                 y_offset += use_font.get_height() + 5
 
-        # Draw continue indicator
+        # Draw continue indicator (animated arrow)
         if self.waiting_for_input:
-            indicator_x = self.rect.right - 30
-            indicator_y = self.rect.bottom - 25
+            indicator_x = self.rect.right - 28
+            indicator_y = self.rect.bottom - 22
             pygame.draw.polygon(
                 surface,
-                config.COLOR_BLACK,
-                [(indicator_x, indicator_y), (indicator_x + 10, indicator_y), (indicator_x + 5, indicator_y + 8)]
+                config.COLOR_INFO_BOX_BORDER,
+                [(indicator_x, indicator_y), (indicator_x + 12, indicator_y), (indicator_x + 6, indicator_y + 9)]
             )
 
     def has_messages(self) -> bool:

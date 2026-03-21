@@ -1,5 +1,7 @@
 """Main menu screen."""
 
+import math
+import random
 import pygame
 from typing import Any, Optional
 
@@ -51,6 +53,17 @@ class MenuScreen(BaseScreen):
         self.selected_index = 0
         self._pending_result = None
 
+        # Star field for background animation
+        rng = random.Random(42)
+        self.stars = [
+            (rng.randint(0, config.SCREEN_WIDTH),
+             rng.randint(0, config.SCREEN_HEIGHT),
+             rng.randint(1, 2),
+             rng.uniform(0, math.pi * 2))
+            for _ in range(80)
+        ]
+        self.star_time = 0.0
+
     def _set_result(self, result: str):
         """Set the pending result."""
         self._pending_result = result
@@ -77,6 +90,7 @@ class MenuScreen(BaseScreen):
 
     def update(self, dt: float):
         """Update the menu screen."""
+        self.star_time += dt
         mouse_pos = pygame.mouse.get_pos()
         for i, button in enumerate(self.buttons):
             button.update(mouse_pos)
@@ -84,9 +98,36 @@ class MenuScreen(BaseScreen):
             if button.is_hovered:
                 self.selected_index = i
 
+    def _draw_pokeball_deco(self, cx: int, cy: int, r: int):
+        """Draw a subtle Pokeball decoration blended into the dark background."""
+        # Top half (dark red tint)
+        pygame.draw.circle(self.display, (75, 28, 28), (cx, cy), r)
+        # Bottom half (dark blue-gray blending into bg)
+        pygame.draw.rect(self.display, (48, 53, 70), (cx - r, cy, r * 2, r + 1))
+        # Horizontal center stripe
+        pygame.draw.rect(self.display, (36, 41, 56), (cx - r, cy - 7, r * 2, 14))
+        # Center circle outer
+        pygame.draw.circle(self.display, (36, 41, 56), (cx, cy), r // 4 + 2)
+        # Center circle inner highlight
+        pygame.draw.circle(self.display, (58, 63, 80), (cx, cy), r // 4 - 2)
+        # Outer ring outline
+        pygame.draw.circle(self.display, (50, 55, 72), (cx, cy), r, width=2)
+
     def render(self):
         """Render the menu screen."""
         self.fill_background(config.COLOR_MENU_BG)
+
+        # Draw twinkling star field
+        for x, y, size, phase in self.stars:
+            brightness = int(170 + 65 * math.sin(self.star_time * 1.3 + phase))
+            pygame.draw.circle(
+                self.display,
+                (brightness, brightness, min(brightness + 25, 255)),
+                (x, y), size
+            )
+
+        # Draw decorative Pokeball in the top-right corner (partially cropped)
+        self._draw_pokeball_deco(700, 80, 105)
 
         # Draw title with shadow effect
         title_lines = [
@@ -111,6 +152,13 @@ class MenuScreen(BaseScreen):
         subtitle_surface = self.font_small.render(subtitle, True, config.COLOR_LIGHT_GRAY)
         subtitle_rect = subtitle_surface.get_rect(centerx=config.SCREEN_WIDTH // 2, y=220)
         self.display.blit(subtitle_surface, subtitle_rect)
+
+        # Decorative divider under subtitle
+        div_y = 252
+        div_cx = config.SCREEN_WIDTH // 2
+        pygame.draw.line(self.display, (60, 70, 100), (div_cx - 120, div_y), (div_cx - 10, div_y), 1)
+        pygame.draw.circle(self.display, config.COLOR_SECONDARY, (div_cx, div_y), 4)
+        pygame.draw.line(self.display, (60, 70, 100), (div_cx + 10, div_y), (div_cx + 120, div_y), 1)
 
         # Draw buttons
         for i, button in enumerate(self.buttons):

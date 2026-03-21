@@ -52,16 +52,21 @@ class BattleScreen(BaseScreen):
         self.opponent_sprite = None
         self._load_sprites()
 
-        # HP bars
-        self.player_hp_bar = HPBar(
-            config.SCREEN_WIDTH - 280, 320,
-            200, 25, show_text=True
-        )
+        # HP bars — positioned inside styled info boxes
+        # Opponent info box: top-left area (x=48, y=14, w=300, h=82)
         self.opponent_hp_bar = HPBar(
-            80, 80,
-            200, 25, show_text=True
+            86, 62,
+            230, 18, show_text=True
+        )
+        # Player info box: right side (x=500, y=258, w=270, h=88)
+        self.player_hp_bar = HPBar(
+            536, 316,
+            216, 18, show_text=True
         )
         self._update_hp_bars(animate=False)
+
+        # Pre-render gradient battle background
+        self.battle_bg = self._create_battle_bg()
 
         # Message box
         self.message_box = MessageBox(
@@ -79,6 +84,50 @@ class BattleScreen(BaseScreen):
 
         # Result tracking
         self.action_result: Optional[Tuple[str, int]] = None
+
+    def _create_battle_bg(self) -> pygame.Surface:
+        """Pre-render a sky-to-grass gradient for the battle area."""
+        battle_h = config.SCREEN_HEIGHT - 180
+        surface = pygame.Surface((config.SCREEN_WIDTH, battle_h))
+        horizon = 230
+
+        sky_top = config.COLOR_SKY_TOP
+        sky_bot = config.COLOR_SKY_BOTTOM
+        grass_top = config.COLOR_GRASS_TOP
+        grass_bot = config.COLOR_GRASS_BOTTOM
+
+        for y in range(battle_h):
+            if y < horizon:
+                t = y / horizon
+                r = int(sky_top[0] + (sky_bot[0] - sky_top[0]) * t)
+                g = int(sky_top[1] + (sky_bot[1] - sky_top[1]) * t)
+                b = int(sky_top[2] + (sky_bot[2] - sky_top[2]) * t)
+            else:
+                t = (y - horizon) / (battle_h - horizon)
+                r = int(grass_top[0] + (grass_bot[0] - grass_top[0]) * t)
+                g = int(grass_top[1] + (grass_bot[1] - grass_top[1]) * t)
+                b = int(grass_top[2] + (grass_bot[2] - grass_top[2]) * t)
+            pygame.draw.line(surface, (r, g, b), (0, y), (config.SCREEN_WIDTH, y))
+
+        return surface
+
+    def _draw_platforms(self):
+        """Draw oval grass platforms under each Pokemon."""
+        # Opponent platform (upper-left quadrant)
+        opp_cx = config.OPPONENT_SPRITE_POS[0] + 144
+        opp_cy = 305
+        opp_outer = pygame.Rect(opp_cx - 112, opp_cy - 20, 224, 40)
+        opp_inner = pygame.Rect(opp_cx - 108, opp_cy - 15, 216, 30)
+        pygame.draw.ellipse(self.display, config.COLOR_PLATFORM_EDGE, opp_outer)
+        pygame.draw.ellipse(self.display, config.COLOR_PLATFORM_FILL, opp_inner)
+
+        # Player platform (lower-right quadrant)
+        pl_cx = config.PLAYER_SPRITE_POS[0] + 144
+        pl_cy = 398
+        pl_outer = pygame.Rect(pl_cx - 112, pl_cy - 20, 224, 40)
+        pl_inner = pygame.Rect(pl_cx - 108, pl_cy - 15, 216, 30)
+        pygame.draw.ellipse(self.display, config.COLOR_PLATFORM_EDGE, pl_outer)
+        pygame.draw.ellipse(self.display, config.COLOR_PLATFORM_FILL, pl_inner)
 
     def _load_sprites(self):
         """Load Pokemon sprites."""
@@ -369,21 +418,33 @@ class BattleScreen(BaseScreen):
 
     def render(self):
         """Render the battle screen."""
-        # Draw background
-        self.fill_background(config.COLOR_BATTLE_BG)
+        # Draw gradient battle background
+        self.display.blit(self.battle_bg, (0, 0))
 
-        # Draw battle area separator
+        # Draw grass platforms under sprites
+        self._draw_platforms()
+
+        # Draw action panel
+        panel_y = config.SCREEN_HEIGHT - 180
+        # Subtle top shadow strip
+        pygame.draw.rect(
+            self.display,
+            (160, 170, 175),
+            (0, panel_y - 4, config.SCREEN_WIDTH, 4)
+        )
+        # Panel fill
         pygame.draw.rect(
             self.display,
             config.COLOR_WHITE,
-            (0, config.SCREEN_HEIGHT - 180, config.SCREEN_WIDTH, 180)
+            (0, panel_y, config.SCREEN_WIDTH, 180)
         )
+        # Panel top border
         pygame.draw.line(
             self.display,
-            config.COLOR_BLACK,
-            (0, config.SCREEN_HEIGHT - 180),
-            (config.SCREEN_WIDTH, config.SCREEN_HEIGHT - 180),
-            3
+            config.COLOR_INFO_BOX_BORDER,
+            (0, panel_y),
+            (config.SCREEN_WIDTH, panel_y),
+            2
         )
 
         # Draw opponent Pokemon
@@ -415,27 +476,57 @@ class BattleScreen(BaseScreen):
         if self.state == self.STATE_RESULT:
             self._render_result()
 
+    def _draw_info_box(self, box_x: int, box_y: int, box_w: int, box_h: int,
+                       pokemon, hp_bar: 'HPBar', name_right: bool = False):
+        """Draw a styled Pokemon info box (name, level, HP)."""
+        # Drop shadow
+        shadow_surf = pygame.Surface((box_w, box_h), pygame.SRCALPHA)
+        pygame.draw.rect(shadow_surf, (0, 0, 0, 45), shadow_surf.get_rect(), border_radius=10)
+        self.display.blit(shadow_surf, (box_x + 4, box_y + 4))
+
+        # Box background
+        pygame.draw.rect(
+            self.display, config.COLOR_INFO_BOX,
+            (box_x, box_y, box_w, box_h), border_radius=10
+        )
+        # Box border
+        pygame.draw.rect(
+            self.display, config.COLOR_INFO_BOX_BORDER,
+            (box_x, box_y, box_w, box_h), width=2, border_radius=10
+        )
+
+        # Pokemon name
+        name_surf = self.font_medium.render(pokemon.get_display_name(), True, config.COLOR_BLACK)
+        # Level label (right-aligned)
+        lvl_surf = self.font_small.render(f"Lv.{pokemon.level}", True, config.COLOR_DARK_GRAY)
+
+        if name_right:
+            # Name right-aligned, level to left
+            self.display.blit(name_surf, (box_x + box_w - name_surf.get_width() - 10, box_y + 8))
+            self.display.blit(lvl_surf, (box_x + 10, box_y + 12))
+        else:
+            self.display.blit(name_surf, (box_x + 10, box_y + 8))
+            self.display.blit(lvl_surf, (box_x + box_w - lvl_surf.get_width() - 10, box_y + 12))
+
+        # "HP" label
+        hp_label = self.font_small.render("HP", True, config.COLOR_DARK_GRAY)
+        self.display.blit(hp_label, (box_x + 10, hp_bar.rect.y + 1))
+
+        # HP bar
+        hp_bar.render(self.display, self.font_small)
+
     def _render_opponent(self):
         """Render opponent Pokemon area."""
         opponent_pokemon = self.opponent.get_active_pokemon()
         if not opponent_pokemon:
             return
 
-        # Draw sprite
+        # Styled info box (top-left area)
+        self._draw_info_box(48, 14, 300, 82, opponent_pokemon, self.opponent_hp_bar)
+
+        # Draw sprite on top (transparent areas let the box show through)
         if self.opponent_sprite:
             self.display.blit(self.opponent_sprite, config.OPPONENT_SPRITE_POS)
-
-        # Draw info box
-        info_x = 80
-        info_y = 20
-
-        # Name and level
-        name_text = f"{opponent_pokemon.get_display_name()}  Lv.{opponent_pokemon.level}"
-        name_surface = self.font_medium.render(name_text, True, config.COLOR_BLACK)
-        self.display.blit(name_surface, (info_x, info_y))
-
-        # HP bar
-        self.opponent_hp_bar.render(self.display, self.font_small)
 
     def _render_player(self):
         """Render player Pokemon area."""
@@ -443,20 +534,12 @@ class BattleScreen(BaseScreen):
         if not player_pokemon:
             return
 
-        # Draw sprite
+        # Draw sprite first, then info box on top
         if self.player_sprite:
             self.display.blit(self.player_sprite, config.PLAYER_SPRITE_POS)
 
-        # Draw info box
-        info_x = config.SCREEN_WIDTH - 280
-        info_y = 260
-
-        # Name and level
-        name_text = f"{player_pokemon.get_display_name()}  Lv.{player_pokemon.level}"
-        name_surface = self.font_medium.render(name_text, True, config.COLOR_BLACK)
-        self.display.blit(name_surface, (info_x, info_y))
-
-        # HP bar is rendered separately
+        # Styled info box (bottom-right area)
+        self._draw_info_box(498, 256, 272, 88, player_pokemon, self.player_hp_bar, name_right=False)
 
     def _render_result(self):
         """Render battle result overlay."""

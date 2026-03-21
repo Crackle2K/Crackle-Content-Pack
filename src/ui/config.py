@@ -31,6 +31,18 @@ COLOR_BG = (248, 248, 250)
 COLOR_BATTLE_BG = (200, 224, 200)
 COLOR_MENU_BG = (30, 35, 50)
 
+# Battle background gradient colors
+COLOR_SKY_TOP = (110, 175, 235)       # Clear sky blue
+COLOR_SKY_BOTTOM = (178, 218, 200)    # Horizon mist green
+COLOR_GRASS_TOP = (162, 208, 120)     # Bright grass
+COLOR_GRASS_BOTTOM = (98, 152, 58)    # Deep grass
+COLOR_PLATFORM_FILL = (198, 222, 162) # Light grass platform
+COLOR_PLATFORM_EDGE = (140, 180, 90)  # Darker platform edge
+
+# Battle info box
+COLOR_INFO_BOX = (242, 246, 250)      # Info box background
+COLOR_INFO_BOX_BORDER = (52, 65, 88)  # Info box border
+
 # Button colors
 COLOR_BUTTON = (70, 110, 200)
 COLOR_BUTTON_HOVER = (90, 130, 220)
