@@ -49,6 +49,9 @@ class Pokemon:
         # Battle state
         self.is_fainted = False
 
+        # Experience
+        self.experience_points: int = 0
+
     def _calculate_hp(self) -> int:
         """Calculate HP stat using the Pokemon formula."""
         base = self.base_stats["hp"]
@@ -136,6 +139,31 @@ class Pokemon:
         actual_heal = min(self.max_hp - self.current_hp, max(0, amount))
         self.current_hp += actual_heal
         return actual_heal
+
+    def gain_exp(self, amount: int) -> bool:
+        """
+        Gain experience points.
+
+        Returns:
+            True if the Pokemon leveled up
+        """
+        if self.level >= 100:
+            return False
+        self.experience_points += amount
+        xp_needed = self.level * 100
+        if self.experience_points >= xp_needed:
+            self.experience_points -= xp_needed
+            self.level = min(100, self.level + 1)
+            old_max_hp = self.max_hp
+            self.max_hp = self._calculate_hp()
+            self.current_hp += self.max_hp - old_max_hp
+            self.attack = self._calculate_stat("attack")
+            self.defense = self._calculate_stat("defense")
+            self.sp_attack = self._calculate_stat("sp_attack")
+            self.sp_defense = self._calculate_stat("sp_defense")
+            self.speed = self._calculate_stat("speed")
+            return True
+        return False
 
     def full_restore(self):
         """Fully restore HP and PP."""

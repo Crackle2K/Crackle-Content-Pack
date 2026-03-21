@@ -9,6 +9,9 @@ from src.ui.screens.menu_screen import MenuScreen
 from src.ui.screens.selection_screen import SelectionScreen, NameInputScreen
 from src.ui.screens.battle_screen import BattleScreen
 from src.ui.screens.save_slot_screen import SaveSlotScreen
+from src.ui.screens.hub_screen import HubScreen
+from src.ui.screens.shop_screen import ShopScreen
+from src.ui.screens.inventory_screen import InventoryScreen
 from src.entities.pokemon import Pokemon
 from src.entities.trainer import Trainer
 from src.battle.battle import Battle, BattleEvent
@@ -76,7 +79,7 @@ class PygameUI:
         result = screen.run()
         return result if result else "Trainer"
 
-    def show_pokemon_selection(self, pokemon_list: List[Pokemon], title: str = "Choose your Pokemon:") -> int:
+    def show_pokemon_selection(self, pokemon_list: List[Pokemon], title: str = "Choose your Pokemon:"):
         """
         Show Pokemon selection menu.
 
@@ -85,11 +88,29 @@ class PygameUI:
             title: Title to display
 
         Returns:
-            Index of selected Pokemon
+            Index of selected Pokemon, or "konami" if Konami code was entered
         """
         screen = SelectionScreen(self.display, self.assets, pokemon_list, title)
         result = screen.run()
+        if result == "konami":
+            return "konami"
         return result if result is not None else 0
+
+    def show_hub_menu(self, player: Trainer, battles_won: int) -> str:
+        """Show the 4-quadrant hub screen. Returns the chosen action token."""
+        screen = HubScreen(self.display, self.assets, player, battles_won)
+        result = screen.run()
+        return result if result else "settings"
+
+    def show_shop(self, player: Trainer):
+        """Show the Poke Mart shop screen."""
+        screen = ShopScreen(self.display, self.assets, player)
+        screen.run()
+
+    def show_inventory(self, player: Trainer):
+        """Show the item bag / inventory screen."""
+        screen = InventoryScreen(self.display, self.assets, player)
+        screen.run()
 
     def show_battle_status(self, player: Trainer, opponent: Trainer):
         """
