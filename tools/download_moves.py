@@ -73,7 +73,17 @@ def _fetch_move(move_name: str) -> tuple[str, dict | None]:
 
     category = (data.get("damage_class") or {}).get("name", "status")
 
-    return move_name, {
+    # Stat changes (e.g. Growl lowers Attack by 1 stage)
+    stat_effects = []
+    for sc in data.get("stat_changes", []):
+        stat_name = _norm(sc["stat"]["name"])
+        change    = sc["change"]  # negative = lower, positive = raise
+        # PokeAPI doesn't directly say "self" vs "opponent" for most moves;
+        # positive changes are almost always self-boosts, negative are opponent drops
+        target = "self" if change > 0 else "opponent"
+        stat_effects.append({"stat": stat_name, "change": change, "target": target})
+
+    result = {
         "display_name": display_name,
         "type":         data["type"]["name"],
         "category":     category,          # "physical" / "special" / "status"
@@ -83,6 +93,9 @@ def _fetch_move(move_name: str) -> tuple[str, dict | None]:
         "priority":     data.get("priority", 0),
         "description":  desc,
     }
+    if stat_effects:
+        result["stat_effects"] = stat_effects
+    return move_name, result
 
 
 # ── Main entry point ──────────────────────────────────────────────────────────

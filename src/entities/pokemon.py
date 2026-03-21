@@ -58,6 +58,11 @@ class Pokemon:
         # Battle state
         self.is_fainted      = False
         self.experience_points: int = 0
+        self.stat_stages: dict = {
+            "attack": 0, "defense": 0,
+            "sp_attack": 0, "sp_defense": 0,
+            "speed": 0, "accuracy": 0, "evasion": 0,
+        }
 
     # ── Stat formulae ─────────────────────────────────────────────────────────
 
@@ -122,6 +127,27 @@ class Pokemon:
 
         return False
 
+    # ── Stat stages ───────────────────────────────────────────────────────────
+
+    def get_stat_stage_mult(self, stat: str) -> float:
+        """Return the multiplier for a stat based on its stage (Gen 2 formula)."""
+        stage = max(-6, min(6, self.stat_stages.get(stat, 0)))
+        return max(2, 2 + stage) / max(2, 2 - stage)
+
+    def apply_stat_change(self, stat: str, change: int) -> tuple[bool, int]:
+        """
+        Apply a stat stage change. Returns (changed, new_stage).
+        changed is False if already at the limit.
+        """
+        current = self.stat_stages.get(stat, 0)
+        new     = max(-6, min(6, current + change))
+        self.stat_stages[stat] = new
+        return new != current, new
+
+    def reset_stat_stages(self):
+        for stat in self.stat_stages:
+            self.stat_stages[stat] = 0
+
     # ── Damage / healing ──────────────────────────────────────────────────────
 
     def take_damage(self, damage: int) -> int:
@@ -181,11 +207,11 @@ class Pokemon:
             return 0, 1.0, False
 
         if move.is_physical():
-            attack_stat  = self.attack
-            defense_stat = defender.defense
+            attack_stat  = self.attack  * self.get_stat_stage_mult("attack")
+            defense_stat = defender.defense * defender.get_stat_stage_mult("defense")
         else:
-            attack_stat  = self.sp_attack
-            defense_stat = defender.sp_defense
+            attack_stat  = self.sp_attack  * self.get_stat_stage_mult("sp_attack")
+            defense_stat = defender.sp_defense * defender.get_stat_stage_mult("sp_defense")
 
         base_damage = ((2 * self.level / 5 + 2) * move.power * attack_stat / defense_stat) / 50 + 2
         stab        = 1.5 if move.type in self.types else 1.0

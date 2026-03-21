@@ -39,6 +39,7 @@ class Move:
             self.current_pp   = self.max_pp
             self.priority     = int(d.get("priority", 0))
             self.description  = d.get("description", "")
+            self.stat_effects = d.get("stat_effects", [])
 
         elif move_name in MOVES_DATA:
             d                 = MOVES_DATA[move_name]
@@ -52,6 +53,7 @@ class Move:
             self.current_pp   = self.max_pp
             self.priority     = d.get("priority", 0)
             self.description  = d["description"]
+            self.stat_effects = d.get("stat_effects", [])
 
         else:
             raise ValueError(f"Unknown move: {move_name}")
