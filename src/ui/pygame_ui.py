@@ -12,6 +12,7 @@ from src.ui.screens.save_slot_screen import SaveSlotScreen
 from src.ui.screens.hub_screen import HubScreen
 from src.ui.screens.shop_screen import ShopScreen
 from src.ui.screens.inventory_screen import InventoryScreen
+from src.ui.screens.pokemon_center_screen import PokemonCenterScreen
 from src.entities.pokemon import Pokemon
 from src.entities.trainer import Trainer
 from src.battle.battle import Battle, BattleEvent
@@ -110,6 +111,11 @@ class PygameUI:
     def show_inventory(self, player: Trainer):
         """Show the item bag / inventory screen."""
         screen = InventoryScreen(self.display, self.assets, player)
+        screen.run()
+
+    def show_pokemon_center(self, player: Trainer):
+        """Show the Pokemon Center healing screen."""
+        screen = PokemonCenterScreen(self.display, self.assets, player)
         screen.run()
 
     def show_battle_status(self, player: Trainer, opponent: Trainer):
