@@ -21,6 +21,8 @@ class Trainer:
         self.is_player = is_player
         self.team: list[Pokemon] = []
         self.active_pokemon_index: int = 0
+        self.money: int = 0
+        self.items: dict = {}  # item_name -> count
 
     def add_pokemon(self, pokemon: Pokemon) -> bool:
         """
@@ -82,6 +84,30 @@ class Trainer:
                 self.active_pokemon_index = i
                 return True
         return False
+
+    def add_money(self, amount: int):
+        """Add money to the trainer."""
+        self.money += amount
+
+    def spend_money(self, amount: int) -> bool:
+        """Spend money. Returns False if insufficient funds."""
+        if self.money < amount:
+            return False
+        self.money -= amount
+        return True
+
+    def add_item(self, item_name: str, count: int = 1):
+        """Add items to inventory."""
+        self.items[item_name] = self.items.get(item_name, 0) + count
+
+    def use_item(self, item_name: str) -> bool:
+        """Remove one use of an item. Returns False if none available."""
+        if self.items.get(item_name, 0) <= 0:
+            return False
+        self.items[item_name] -= 1
+        if self.items[item_name] == 0:
+            del self.items[item_name]
+        return True
 
     def heal_team(self):
         """Fully heal all Pokemon in the team."""

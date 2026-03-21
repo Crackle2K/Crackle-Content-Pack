@@ -41,6 +41,7 @@ class Battle:
         self.is_over = False
         self.winner: Optional[Trainer] = None
         self.events: list[BattleEvent] = []
+        self.player_battlers: set = set()  # Pokemon objects that fought for the player
 
     def start(self) -> list[BattleEvent]:
         """Start the battle and return initial events."""
@@ -49,6 +50,8 @@ class Battle:
 
         player_pokemon = self.player.get_active_pokemon()
         opponent_pokemon = self.opponent.get_active_pokemon()
+
+        self.player_battlers.add(player_pokemon)
 
         self._add_event("send_out", f"{self.opponent.name} sent out {opponent_pokemon.get_display_name()}!")
         self._add_event("send_out", f"Go! {player_pokemon.get_display_name()}!")
@@ -143,6 +146,7 @@ class Battle:
         if trainer.switch_pokemon(pokemon_index):
             new_pokemon = trainer.get_active_pokemon()
             if trainer.is_player:
+                self.player_battlers.add(new_pokemon)
                 self._add_event("switch", f"Come back, {old_pokemon.get_display_name()}!")
                 self._add_event("send_out", f"Go! {new_pokemon.get_display_name()}!")
             else:

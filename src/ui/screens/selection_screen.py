@@ -3,6 +3,15 @@
 import pygame
 from typing import Any, Optional, List
 
+# Konami code sequence for unlocking Pikachu as a starter
+_KONAMI = [
+    pygame.K_UP, pygame.K_UP,
+    pygame.K_DOWN, pygame.K_DOWN,
+    pygame.K_LEFT, pygame.K_RIGHT,
+    pygame.K_LEFT, pygame.K_RIGHT,
+    pygame.K_b, pygame.K_a,
+]
+
 from src.ui import config
 from src.ui.screens.base_screen import BaseScreen
 from src.ui.components.button import Button
@@ -57,6 +66,9 @@ class SelectionScreen(BaseScreen):
         if self.cards:
             self.cards[0].set_selected(True)
 
+        # Konami code state
+        self._konami_buffer: list = []
+
         # Select button
         self.select_button = Button(
             (config.SCREEN_WIDTH - 200) // 2,
@@ -87,8 +99,16 @@ class SelectionScreen(BaseScreen):
         if self.select_button.handle_event(event):
             return self._pending_result
 
-        # Keyboard navigation
+        # Keyboard navigation + Konami code
         if event.type == pygame.KEYDOWN:
+            # Track Konami code buffer
+            self._konami_buffer.append(event.key)
+            if len(self._konami_buffer) > len(_KONAMI):
+                self._konami_buffer.pop(0)
+            if self._konami_buffer == _KONAMI:
+                self._konami_buffer.clear()
+                return "konami"
+
             cards_per_row = min(4, len(self.pokemon_list))
 
             if event.key == pygame.K_LEFT:

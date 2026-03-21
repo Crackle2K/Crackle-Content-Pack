@@ -85,7 +85,18 @@ class AssetManager:
         if cache_key in self._font_cache:
             return self._font_cache[cache_key]
 
-        # Try to use sleek modern fonts, fall back to default
+        # Try the pixel font (Press Start 2P) first — halve size so it fits existing layouts
+        pixel_font_path = os.path.join(self.assets_path, "fonts", "PressStart2P-Regular.ttf")
+        if os.path.exists(pixel_font_path):
+            try:
+                adjusted = max(8, size // 2)
+                font = pygame.font.Font(pixel_font_path, adjusted)
+                self._font_cache[cache_key] = font
+                return font
+            except pygame.error:
+                pass
+
+        # Fall back to system fonts
         font_names = ["Segoe UI", "Roboto", "SF Pro Display", "Inter", "Open Sans", "Helvetica Neue", "arial"]
 
         font = None
@@ -93,7 +104,7 @@ class AssetManager:
             try:
                 font = pygame.font.SysFont(name, size, bold=bold)
                 break
-            except:
+            except Exception:
                 continue
 
         if font is None:
