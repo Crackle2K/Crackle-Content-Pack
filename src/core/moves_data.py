@@ -386,4 +386,108 @@ MOVES_DATA = {
         "pp": 10,
         "description": "This attack hits the target with a shock wave of pure rage."
     },
+
+    # ── Status moves (power=0, lower/raise stats) ─────────────────────────────
+    "growl": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 40,
+        "description": "The user growls in an endearing way, lowering the target's Attack.",
+        "stat_effects": [{"stat": "attack", "change": -1, "target": "opponent"}],
+    },
+    "tail_whip": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 30,
+        "description": "The user wags its tail to lower the target's Defense.",
+        "stat_effects": [{"stat": "defense", "change": -1, "target": "opponent"}],
+    },
+    "leer": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 30,
+        "description": "The user gives the target an intimidating leer to lower its Defense.",
+        "stat_effects": [{"stat": "defense", "change": -1, "target": "opponent"}],
+    },
+    "smokescreen": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 20,
+        "description": "The user releases an obscuring cloud of smoke to lower accuracy.",
+        "stat_effects": [{"stat": "accuracy", "change": -1, "target": "opponent"}],
+    },
+    "sand_attack": {
+        "type": PokemonType.GROUND, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 15,
+        "description": "Sand is hurled in the target's face to lower its accuracy.",
+        "stat_effects": [{"stat": "accuracy", "change": -1, "target": "opponent"}],
+    },
+    "string_shot": {
+        "type": PokemonType.BUG, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 95, "pp": 40,
+        "description": "The targets are bound with silk blown from the user's mouth, lowering Speed.",
+        "stat_effects": [{"stat": "speed", "change": -1, "target": "opponent"}],
+    },
+    "swords_dance": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 20,
+        "description": "A frenetic dance to uplift the fighting spirit — sharply raises Attack.",
+        "stat_effects": [{"stat": "attack", "change": 2, "target": "self"}],
+    },
+    "harden": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 30,
+        "description": "The user stiffens all the muscles in its body to raise its Defense.",
+        "stat_effects": [{"stat": "defense", "change": 1, "target": "self"}],
+    },
+    "withdraw": {
+        "type": PokemonType.WATER, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 40,
+        "description": "The user withdraws its body into its hard shell to raise its Defense.",
+        "stat_effects": [{"stat": "defense", "change": 1, "target": "self"}],
+    },
+    "defense_curl": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 40,
+        "description": "The user curls up to conceal weak spots and boosts its Defense.",
+        "stat_effects": [{"stat": "defense", "change": 1, "target": "self"}],
+    },
+    "agility": {
+        "type": PokemonType.PSYCHIC, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 30,
+        "description": "The user relaxes and lightens its body to move faster — sharply raises Speed.",
+        "stat_effects": [{"stat": "speed", "change": 2, "target": "self"}],
+    },
+    "amnesia": {
+        "type": PokemonType.PSYCHIC, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 20,
+        "description": "The user temporarily empties its mind to forget its concerns — sharply raises Sp. Def.",
+        "stat_effects": [{"stat": "sp_defense", "change": 2, "target": "self"}],
+    },
+    "meditate": {
+        "type": PokemonType.PSYCHIC, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 40,
+        "description": "The user meditates to awaken the power deep within its body — raises Attack.",
+        "stat_effects": [{"stat": "attack", "change": 1, "target": "self"}],
+    },
+    "screech": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 85, "pp": 40,
+        "description": "An earsplitting screech harshly lowers the target's Defense.",
+        "stat_effects": [{"stat": "defense", "change": -2, "target": "opponent"}],
+    },
+    "scary_face": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 10,
+        "description": "The user frightens the target with a scary face, sharply lowering its Speed.",
+        "stat_effects": [{"stat": "speed", "change": -2, "target": "opponent"}],
+    },
+    "acid": {
+        "type": PokemonType.POISON, "category": MoveCategory.SPECIAL,
+        "power": 40, "accuracy": 100, "pp": 30,
+        "description": "Opposing Pokemon are attacked with a spray of harsh acid.",
+        "stat_effects": [{"stat": "defense", "change": -1, "target": "opponent"}],
+    },
+    "bubble_beam": {
+        "type": PokemonType.WATER, "category": MoveCategory.SPECIAL,
+        "power": 65, "accuracy": 100, "pp": 20,
+        "description": "A spray of bubbles is forcefully ejected — may lower Speed.",
+        "stat_effects": [],
+    },
 }

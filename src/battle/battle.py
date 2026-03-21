@@ -144,6 +144,8 @@ class Battle:
     def _execute_switch(self, trainer: Trainer, pokemon_index: int):
         """Execute a Pokemon switch."""
         old_pokemon = trainer.get_active_pokemon()
+        if old_pokemon:
+            old_pokemon.reset_stat_stages()
         if trainer.switch_pokemon(pokemon_index):
             new_pokemon = trainer.get_active_pokemon()
             if trainer.is_player:
@@ -172,7 +174,33 @@ class Battle:
             self._add_event("miss", f"{attacker_name}'s attack missed!")
             return
 
-        # Calculate and apply damage
+        stat_effects = getattr(move, "stat_effects", [])
+
+        # Pure status move — apply stat changes, no damage
+        if move.power == 0:
+            if not stat_effects:
+                self._add_event("no_effect", "But nothing happened!")
+                return
+            for eff in stat_effects:
+                target = attacker if eff["target"] == "self" else defender
+                target_name = attacker_name if eff["target"] == "self" else defender_name
+                changed, new_stage = target.apply_stat_change(eff["stat"], eff["change"])
+                stat_label = eff["stat"].replace("_", " ").title()
+                if not changed:
+                    direction = "higher" if eff["change"] > 0 else "lower"
+                    self._add_event("stat_change",
+                                    f"{target_name}'s {stat_label} can't go any {direction}!")
+                else:
+                    if abs(eff["change"]) >= 2:
+                        adv = "sharply " if eff["change"] > 0 else "harshly "
+                    else:
+                        adv = ""
+                    direction = "rose" if eff["change"] > 0 else "fell"
+                    self._add_event("stat_change",
+                                    f"{target_name}'s {stat_label} {adv}{direction}!")
+            return
+
+        # Damaging move
         damage, effectiveness, is_critical = attacker.calculate_damage(move, defender)
 
         if effectiveness == 0:
@@ -191,6 +219,16 @@ class Battle:
 
         self._add_event("damage", f"{defender_name} took {actual_damage} damage!",
                        damage=actual_damage, defender_hp=defender.current_hp)
+
+        # Secondary stat effects on damaging moves
+        for eff in stat_effects:
+            target = attacker if eff["target"] == "self" else defender
+            target_name = attacker_name if eff["target"] == "self" else defender_name
+            changed, _ = target.apply_stat_change(eff["stat"], eff["change"])
+            if changed:
+                stat_label = eff["stat"].replace("_", " ").title()
+                direction = "rose" if eff["change"] > 0 else "fell"
+                self._add_event("stat_change", f"{target_name}'s {stat_label} {direction}!")
 
     def _handle_fainting(self):
         """Handle fainted Pokemon and determine if battle is over."""

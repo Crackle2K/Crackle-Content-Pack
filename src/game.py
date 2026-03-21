@@ -44,7 +44,11 @@ class Game:
                 if choice == "new_game":
                     slot = self.ui.show_save_slot_selection()
                     if slot is not None and not self.ui.quit_requested:
-                        self._new_game(slot)
+                        save_path = Path(f"saves/save_{slot}.json")
+                        if save_path.exists():
+                            self._load_game(slot)
+                        else:
+                            self._new_game(slot)
                 elif choice == "exit":
                     self.running = False
 
@@ -77,6 +81,44 @@ class Game:
 
         self._save_game()
         self._rival_battle()
+
+    # ── Load game ─────────────────────────────────────────────────────────────
+
+    def _load_game(self, slot: int):
+        self.save_slot = slot
+        save_path = Path(f"saves/save_{slot}.json")
+        try:
+            data = json.loads(save_path.read_text())
+        except Exception:
+            self.ui.show_message("Save file corrupted — starting new game.")
+            self.ui.wait_for_input()
+            self._new_game(slot)
+            return
+
+        name             = data.get("player_name", "Trainer")
+        self.battles_won = data.get("battles_won", 0)
+
+        self.player       = Trainer(name, is_player=True)
+        self.player.money = data.get("money", self.STARTING_MONEY)
+        self.player.items = data.get("items", {})
+
+        ids    = data.get("pokemon_ids",    [])
+        levels = data.get("pokemon_levels", [])
+        for pid, lvl in zip(ids, levels):
+            try:
+                self.player.add_pokemon(Pokemon(pid, level=lvl))
+            except Exception:
+                pass
+
+        if not self.player.team:
+            self.ui.show_message("Save file had no Pokemon — starting fresh!")
+            self.ui.wait_for_input()
+            self._new_game(slot)
+            return
+
+        self.ui.show_message(f"Welcome back, {name}!")
+        self.ui.wait_for_input()
+        self._hub_loop()
 
     # ── Starter selection ─────────────────────────────────────────────────────
 
@@ -157,7 +199,7 @@ class Game:
         # Use team average level for scaling
         team_levels = [p.level for p in self.player.team]
         avg_level   = sum(team_levels) // max(1, len(team_levels))
-        num_pokemon = min(3, 1 + self.battles_won // 3)
+        num_pokemon = len(self.player.team)
 
         # Wild encounter — player can catch these Pokemon
         opponent = Trainer(f"Wild Pokemon #{self.battles_won}",
@@ -178,23 +220,15 @@ class Game:
         if self.ui.quit_requested:
             return
 
-        if not won and not (self.player.team and
-                            any(not p.is_fainted for p in self.player.team)):
-            penalty = self.player.money // 2
-            self.player.money -= penalty
-            self.ui.show_message("You blacked out!")
-            if penalty:
-                self.ui.show_message(f"You lost ${penalty}...")
+        if not won:
+            all_fainted = all(p.is_fainted for p in self.player.team)
+            self.ui.show_message("You blacked out!" if all_fainted else "You were defeated!")
             self.ui.wait_for_input()
-            self.player.heal_team()
-        elif not won:
-            penalty = self.player.money // 2
-            self.player.money -= penalty
-            self.ui.show_message("You were defeated!")
-            if penalty:
-                self.ui.show_message(f"You lost ${penalty}...")
-            self.ui.wait_for_input()
-            self.player.heal_team()
+            # Revive each fainted Pokemon to 1 HP (player must visit Pokemon Center to fully heal)
+            for p in self.player.team:
+                if p.is_fainted:
+                    p.is_fainted  = False
+                    p.current_hp  = 1
 
     # ── Save / load ───────────────────────────────────────────────────────────
 
