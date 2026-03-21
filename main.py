@@ -9,6 +9,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tools.download_assets import check_assets_exist, download_pokemon_assets
 from tools.download_items import check_items_exist, download_items
+from tools.download_moves import check_moves_exist, download_moves
 
 
 def _ensure_pixel_font():
@@ -38,6 +39,11 @@ def main():
     if not check_items_exist("assets/items"):
         print("No item catalog found. Downloading from PokeAPI...")
         download_items("assets/items")
+
+    # Download Gen 1 move data + learnsets if not present
+    if not check_moves_exist("assets/moves"):
+        print("No move data found. Downloading from PokeAPI...")
+        download_moves("assets/moves")
 
     # Check if assets exist, download if not
     if not check_assets_exist("assets/sprites"):

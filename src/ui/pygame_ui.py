@@ -13,6 +13,7 @@ from src.ui.screens.hub_screen import HubScreen
 from src.ui.screens.shop_screen import ShopScreen
 from src.ui.screens.inventory_screen import InventoryScreen
 from src.ui.screens.pokemon_center_screen import PokemonCenterScreen
+from src.ui.screens.settings_screen import SettingsScreen
 from src.entities.pokemon import Pokemon
 from src.entities.trainer import Trainer
 from src.battle.battle import Battle, BattleEvent
@@ -22,192 +23,161 @@ class PygameUI:
     """Pygame-based user interface for the game."""
 
     def __init__(self):
-        """Initialize the Pygame UI."""
         pygame.init()
         pygame.display.set_caption(config.TITLE)
-
         self.display = pygame.display.set_mode((config.SCREEN_WIDTH, config.SCREEN_HEIGHT))
-        self.clock = pygame.time.Clock()
-        self.assets = AssetManager()
+        self.clock   = pygame.time.Clock()
+        self.assets  = AssetManager()
 
-        # Fonts
-        self.font_large = self.assets.get_font(config.FONT_SIZE_LARGE)
+        self.font_large  = self.assets.get_font(config.FONT_SIZE_LARGE)
         self.font_medium = self.assets.get_font(config.FONT_SIZE_MEDIUM)
-        self.font_small = self.assets.get_font(config.FONT_SIZE_SMALL)
+        self.font_small  = self.assets.get_font(config.FONT_SIZE_SMALL)
 
-        # Current battle screen (for reuse during battle)
         self.battle_screen: Optional[BattleScreen] = None
 
+        # Set to True when the window X is clicked or Save & Quit is chosen
+        self.quit_requested = False
+
+    # ── Internal helpers ──────────────────────────────────────────────────────
+
+    def _pump(self) -> bool:
+        """Process pending events, set quit_requested if window closed. Returns True if quit."""
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.quit_requested = True
+                return True
+        return False
+
     def clear_screen(self):
-        """Clear the screen."""
         self.display.fill(config.COLOR_BG)
         pygame.display.flip()
 
     def print_title(self):
-        """Display the game title (no-op for Pygame, handled by menu)."""
         pass
 
-    def show_main_menu(self) -> str:
-        """
-        Show the main menu and get selection.
+    # ── Screen wrappers ───────────────────────────────────────────────────────
 
-        Returns:
-            "new_game" or "exit"
-        """
+    def show_main_menu(self) -> str:
         screen = MenuScreen(self.display, self.assets)
         result = screen.run()
+        if result is None:
+            self.quit_requested = True
+            return "exit"
         return result if result else "exit"
 
     def show_save_slot_selection(self) -> Optional[int]:
-        """
-        Show save slot selection screen.
-
-        Returns:
-            Selected slot number (1-4), or None if cancelled
-        """
         screen = SaveSlotScreen(self.display, self.assets)
         result = screen.run()
+        if result is None:
+            self.quit_requested = True
         return result
 
     def get_player_name(self) -> str:
-        """
-        Get the player's name.
-
-        Returns:
-            The entered name
-        """
         screen = NameInputScreen(self.display, self.assets)
         result = screen.run()
+        if result is None:
+            self.quit_requested = True
         return result if result else "Trainer"
 
-    def show_pokemon_selection(self, pokemon_list: List[Pokemon], title: str = "Choose your Pokemon:"):
-        """
-        Show Pokemon selection menu.
-
-        Args:
-            pokemon_list: List of Pokemon to choose from
-            title: Title to display
-
-        Returns:
-            Index of selected Pokemon, or "konami" if Konami code was entered
-        """
+    def show_pokemon_selection(self, pokemon_list: List[Pokemon],
+                               title: str = "Choose your Pokemon:"):
         screen = SelectionScreen(self.display, self.assets, pokemon_list, title)
         result = screen.run()
+        if result is None:
+            self.quit_requested = True
+            return 0
         if result == "konami":
             return "konami"
         return result if result is not None else 0
 
     def show_hub_menu(self, player: Trainer, battles_won: int) -> str:
-        """Show the 4-quadrant hub screen. Returns the chosen action token."""
         screen = HubScreen(self.display, self.assets, player, battles_won)
         result = screen.run()
+        if result is None:
+            self.quit_requested = True
+            return "settings"
         return result if result else "settings"
 
     def show_shop(self, player: Trainer):
-        """Show the Poke Mart shop screen."""
         screen = ShopScreen(self.display, self.assets, player)
-        screen.run()
+        result = screen.run()
+        if result is None:
+            self.quit_requested = True
 
     def show_inventory(self, player: Trainer):
-        """Show the item bag / inventory screen."""
         screen = InventoryScreen(self.display, self.assets, player)
-        screen.run()
+        result = screen.run()
+        if result is None:
+            self.quit_requested = True
 
     def show_pokemon_center(self, player: Trainer):
-        """Show the Pokemon Center healing screen."""
         screen = PokemonCenterScreen(self.display, self.assets, player)
-        screen.run()
+        result = screen.run()
+        if result is None:
+            self.quit_requested = True
+
+    def show_settings(self, player: Trainer, battles_won: int) -> str:
+        """Show the settings screen. Returns 'return' or 'quit'."""
+        screen = SettingsScreen(self.display, self.assets,
+                                player.name, battles_won, player.money)
+        result = screen.run()
+        if result is None:
+            self.quit_requested = True
+            return "quit"
+        return result if result else "return"
+
+    # ── Battle ────────────────────────────────────────────────────────────────
 
     def show_battle_status(self, player: Trainer, opponent: Trainer):
-        """
-        Display the current battle status.
-
-        This is called by game.py but in Pygame the battle screen handles this.
-        We just need to ensure the battle screen exists and is updated.
-        """
-        # Battle status is rendered by the battle screen
         pass
 
-    def show_battle_menu(self, battle: Battle) -> Tuple[str, int]:
-        """
-        Show battle options and get player choice.
-
-        Args:
-            battle: The current battle
-
-        Returns:
-            Tuple of (action_type, index)
-        """
+    def show_battle_menu(self, battle: Battle) -> Tuple[str, object]:
         if self.battle_screen is None:
             self.battle_screen = BattleScreen(self.display, self.assets, battle)
 
         result = self.battle_screen.get_action()
-
         if result is None:
-            # Window was closed
+            self.quit_requested = True
             return ("run", 0)
-
+        if result[0] == "quit":
+            self.quit_requested = True
+            return ("run", 0)
         return result
 
     def show_forced_switch(self, player: Trainer) -> int:
-        """
-        Show forced switch menu when active Pokemon faints.
-
-        Args:
-            player: The player's trainer
-
-        Returns:
-            Index of Pokemon to switch to
-        """
         if self.battle_screen is not None:
             result = self.battle_screen.get_forced_switch()
             if result is not None:
                 return result
-
-        # Fallback: return first available
         available = player.get_available_pokemon()
         if available:
             return available[0][0]
         return 0
 
     def show_battle_events(self, events: List[BattleEvent]):
-        """
-        Display battle events with pauses.
-
-        Args:
-            events: List of battle events to display
-        """
         if self.battle_screen is None:
             return
 
         self.battle_screen.show_events(events)
 
-        # Run the event display loop
         running = True
-        while running and self.battle_screen.event_queue or self.battle_screen.current_event:
+        while running and (self.battle_screen.event_queue or self.battle_screen.current_event):
             dt = self.clock.tick(config.FPS) / 1000.0
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
-                else:
-                    self.battle_screen.handle_event(event)
+                    self.quit_requested = True
+                    return
+                self.battle_screen.handle_event(event)
 
             self.battle_screen.update(dt)
             self.battle_screen.render()
             pygame.display.flip()
 
     def show_battle_result(self, battle: Battle):
-        """
-        Show the battle result.
-
-        Args:
-            battle: The completed battle
-        """
         if self.battle_screen is None:
             return
 
-        # Set result state
         if battle.winner == battle.player:
             message = f"{battle.player.name} won the battle!"
         else:
@@ -216,77 +186,63 @@ class PygameUI:
         self.battle_screen.message_box.set_message(message)
         self.battle_screen.state = BattleScreen.STATE_RESULT
 
-        # Run until user dismisses
         running = True
         while running:
             dt = self.clock.tick(config.FPS) / 1000.0
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    running = False
-                elif self.battle_screen.handle_event(event) == "done":
+                    self.quit_requested = True
+                    return
+                if self.battle_screen.handle_event(event) == "done":
                     running = False
 
             self.battle_screen.update(dt)
             self.battle_screen.render()
             pygame.display.flip()
 
-        # Clear battle screen for next battle
         self.battle_screen = None
 
+    def start_battle(self, battle: Battle):
+        self.battle_screen = BattleScreen(self.display, self.assets, battle)
+
+    # ── Simple message / prompt ───────────────────────────────────────────────
+
     def show_message(self, message: str):
-        """
-        Show a simple message.
-
-        Args:
-            message: The message to display
-        """
         self.display.fill(config.COLOR_BG)
-
-        # Render message centered
         font = self.font_medium
-        text_surface = font.render(message, True, config.COLOR_BLACK)
-        text_rect = text_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2))
-        self.display.blit(text_surface, text_rect)
-
+        ts   = font.render(message, True, config.COLOR_BLACK)
+        self.display.blit(ts, ts.get_rect(center=(config.SCREEN_WIDTH // 2,
+                                                   config.SCREEN_HEIGHT // 2)))
         pygame.display.flip()
-        pygame.time.wait(500)  # Brief pause
+
+        # Brief pause while still processing QUIT events
+        elapsed = 0
+        while elapsed < 500:
+            self.clock.tick(60)
+            elapsed += 1000 // 60
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.quit_requested = True
+                    return
 
     def wait_for_input(self, prompt: str = "Press any key to continue..."):
-        """
-        Wait for user input.
-
-        Args:
-            prompt: The prompt to display
-        """
         self.display.fill(config.COLOR_BG)
-
-        # Render prompt centered
         font = self.font_medium
-        text_surface = font.render(prompt, True, config.COLOR_BLACK)
-        text_rect = text_surface.get_rect(center=(config.SCREEN_WIDTH // 2, config.SCREEN_HEIGHT // 2))
-        self.display.blit(text_surface, text_rect)
-
+        ts   = font.render(prompt, True, config.COLOR_BLACK)
+        self.display.blit(ts, ts.get_rect(center=(config.SCREEN_WIDTH // 2,
+                                                   config.SCREEN_HEIGHT // 2)))
         pygame.display.flip()
 
-        # Wait for key press or click
         waiting = True
         while waiting:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    self.quit_requested = True
+                    return
+                if event.type in (pygame.KEYDOWN, pygame.MOUSEBUTTONDOWN):
                     waiting = False
-                elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                    waiting = False
-
-    def start_battle(self, battle: Battle):
-        """
-        Initialize a new battle screen.
-
-        Args:
-            battle: The battle to start
-        """
-        self.battle_screen = BattleScreen(self.display, self.assets, battle)
+            self.clock.tick(60)
 
     def quit(self):
-        """Clean up and quit Pygame."""
         pygame.quit()
