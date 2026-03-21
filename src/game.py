@@ -8,6 +8,7 @@ from src.entities.trainer import Trainer
 from src.battle.battle import Battle
 from src.ui.pygame_ui import PygameUI
 from src.core.pokemon_data import get_available_pokemon_ids
+from src.core.pokemon_constraints import STARTER_COUNTERS, pick_encounter_pokemon
 
 
 class Game:
@@ -86,9 +87,10 @@ class Game:
             return starters[int(result)]
 
     def _rival_battle(self):
-        """Battle against the rival."""
+        """Battle against the rival — rival uses the type counter to the player's starter."""
         rival = Trainer("Rival Blue", is_player=False)
-        rival_pokemon_id = random.choice(self.STARTERS)
+        starter = self.player.team[0]
+        rival_pokemon_id = STARTER_COUNTERS.get(starter.id, random.choice(self.STARTERS))
         rival.add_pokemon(Pokemon(rival_pokemon_id, level=5))
 
         self.ui.clear_screen()
@@ -116,6 +118,9 @@ class Game:
             elif action == "inventory":
                 self.ui.show_inventory(self.player)
 
+            elif action == "pokemon_center":
+                self.ui.show_pokemon_center(self.player)
+
             elif action == "settings":
                 result = self._settings_menu()
                 if result == "quit":
@@ -134,17 +139,16 @@ class Game:
         opponent_name = random.choice(trainer_names)
         opponent = Trainer(f"{opponent_name} #{self.battles_won}", is_player=False)
 
-        base_level = self.player.get_active_pokemon().level
-        level_range = max(1, self.battles_won // 2)
+        # Use team average level so the encounter scales with overall progress
+        team_levels = [p.level for p in self.player.team]
+        avg_level = sum(team_levels) // max(1, len(team_levels))
         num_pokemon = min(3, 1 + self.battles_won // 3)
 
         for _ in range(num_pokemon):
-            random_id = random.choice(available_ids)
-            level = random.randint(
-                max(5, base_level - level_range),
-                min(100, base_level + level_range)
-            )
-            opponent.add_pokemon(Pokemon(random_id, level=level))
+            # ±4 level variation around the team average (tighter than before)
+            target = random.randint(max(5, avg_level - 4), min(100, avg_level + 4))
+            pid, level = pick_encounter_pokemon(available_ids, target)
+            opponent.add_pokemon(Pokemon(pid, level=level))
 
         self.ui.clear_screen()
         self.ui.show_message(f"{opponent.name} wants to battle!")
@@ -265,10 +269,6 @@ class Game:
         prize = sum(p.level * 30 for p in opponent.team) + 50
         self.player.add_money(prize)
         self.ui.show_message(f"You received ${prize}!")
-
-        # Heal all Pokemon
-        self.player.heal_team()
-        self.ui.show_message("Your Pokemon have been healed!")
         self.ui.wait_for_input()
 
 

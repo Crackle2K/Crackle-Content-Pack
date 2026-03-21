@@ -8,6 +8,7 @@ from pathlib import Path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from tools.download_assets import check_assets_exist, download_pokemon_assets
+from tools.download_items import check_items_exist, download_items
 
 
 def _ensure_pixel_font():
@@ -32,6 +33,11 @@ def main():
     """Main entry point for Pokemon Juno."""
     # Ensure pixel font is present
     _ensure_pixel_font()
+
+    # Download item catalog + sprites if not present
+    if not check_items_exist("assets/items"):
+        print("No item catalog found. Downloading from PokeAPI...")
+        download_items("assets/items")
 
     # Check if assets exist, download if not
     if not check_assets_exist("assets/sprites"):
