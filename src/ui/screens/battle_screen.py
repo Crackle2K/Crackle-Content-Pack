@@ -134,19 +134,21 @@ class BattleScreen(BaseScreen):
     # ── Button creation ───────────────────────────────────────────────────────
 
     def _create_buttons(self):
-        bw   = 145
+        bw   = 118
         bh   = 45
         by   = config.SCREEN_HEIGHT - 80
         gap  = 10
-        # Four main battle actions
+        # Five main battle actions
         self.main_buttons = [
-            Button(30,           by, bw, bh, "Attack",
+            Button(30,                by, bw, bh, "Attack",
                    font=self.font_medium, color=config.COLOR_PRIMARY),
-            Button(30 + bw + gap, by, bw, bh, "Items",
+            Button(30 +   (bw+gap),  by, bw, bh, "Switch",
+                   font=self.font_medium, color=(100, 70, 170)),
+            Button(30 + 2*(bw+gap),  by, bw, bh, "Items",
                    font=self.font_medium, color=(60, 140, 70)),
-            Button(30 + 2*(bw+gap), by, bw, bh, "Catch",
+            Button(30 + 3*(bw+gap),  by, bw, bh, "Catch",
                    font=self.font_medium, color=(170, 55, 100)),
-            Button(30 + 3*(bw+gap), by, bw, bh, "Run",
+            Button(30 + 4*(bw+gap),  by, bw, bh, "Run",
                    font=self.font_medium, color=config.COLOR_ACCENT),
         ]
         self.move_buttons   = []
@@ -290,19 +292,24 @@ class BattleScreen(BaseScreen):
                     if i == 0:   # Attack
                         self.state = self.STATE_MOVE
                         self._update_move_buttons()
-                    elif i == 1: # Items
+                    elif i == 1: # Switch
+                        self._update_switch_buttons()
+                        if self.switch_buttons:
+                            self.state = self.STATE_SWITCH
+                        # else no other pokemon — stay in main
+                    elif i == 2: # Items
                         self._update_item_buttons()
                         if self.item_buttons:
                             self.state = self.STATE_ITEM
                         # else no items — stay in main (button visually disabled)
-                    elif i == 2: # Catch
+                    elif i == 3: # Catch
                         # Find best ball in inventory
                         ball = next(
                             (s for s in self.BALL_PRIORITY
                              if self.player.items.get(s, 0) > 0),
                             None)
                         self.action_result = ("catch", ball)
-                    elif i == 3: # Run
+                    elif i == 4: # Run
                         self.action_result = ("run", 0)
 
         elif self.state == self.STATE_MOVE:
@@ -388,9 +395,13 @@ class BattleScreen(BaseScreen):
             self.message_box.render(self.display, self.font_medium)
 
         if self.state == self.STATE_MAIN:
-            # Draw Catch button as disabled if no balls
             has_ball = any(self.player.items.get(s, 0) > 0 for s in self.BALL_PRIORITY)
-            self.main_buttons[2].disabled = not has_ball
+            has_other = any(
+                idx != self.player.active_pokemon_index and not pk.is_fainted
+                for idx, pk in enumerate(self.player.team)
+            )
+            self.main_buttons[1].disabled = not has_other   # Switch
+            self.main_buttons[3].disabled = not has_ball    # Catch
             for btn in self.main_buttons:
                 btn.render(self.display, self.font_medium)
 

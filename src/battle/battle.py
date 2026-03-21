@@ -169,8 +169,8 @@ class Battle:
 
         self._add_event("use_move", f"{attacker_name} used {move.display_name}!")
 
-        # Check accuracy
-        if random.randint(1, 100) > move.accuracy:
+        # Check accuracy (status moves are always 100% accurate)
+        if move.power > 0 and random.randint(1, 100) > move.accuracy:
             self._add_event("miss", f"{attacker_name}'s attack missed!")
             return
 

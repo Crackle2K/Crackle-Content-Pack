@@ -124,7 +124,7 @@ class PygameUI:
         if result is None:
             self.quit_requested = True
             return "quit"
-        return result if result else "return"
+        return result if result else "return"  # "return", "main_menu", or "quit"
 
     # ── Battle ────────────────────────────────────────────────────────────────
 
