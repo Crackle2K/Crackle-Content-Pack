@@ -143,7 +143,6 @@ assets/*
 saves/
 
 # IDE settings
-.claude/
 .vscode/
 .idea/
 *.swp
