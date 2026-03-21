@@ -32,8 +32,8 @@ class BattleAI:
         """
         pokemon = trainer.get_active_pokemon()
 
-        # Balanced strategy: 60% smart, 40% random
-        if random.random() < 0.6:
+        # Easy strategy: 25% smart, 75% random
+        if random.random() < 0.25:
             return self._choose_smart(trainer, pokemon, opponent_pokemon)
         return self._choose_random(pokemon)
 

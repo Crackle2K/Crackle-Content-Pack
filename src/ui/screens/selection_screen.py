@@ -3,13 +3,10 @@
 import pygame
 from typing import Any, Optional, List
 
-# Konami code sequence for unlocking Pikachu as a starter
+# Secret sequence for unlocking Pikachu as a starter: UP UP DOWN DOWN
 _KONAMI = [
     pygame.K_UP, pygame.K_UP,
     pygame.K_DOWN, pygame.K_DOWN,
-    pygame.K_LEFT, pygame.K_RIGHT,
-    pygame.K_LEFT, pygame.K_RIGHT,
-    pygame.K_b, pygame.K_a,
 ]
 
 from src.ui import config

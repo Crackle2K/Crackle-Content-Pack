@@ -26,11 +26,15 @@ class SettingsScreen(BaseScreen):
         cx   = config.SCREEN_WIDTH  // 2
         mid  = config.SCREEN_HEIGHT // 2
 
-        self.return_button = Button(cx - 170, mid - 10, 160, 50,
+        self.return_button = Button(cx - 255, mid - 10, 160, 50,
                                     "Save & Return",
                                     font=self.font_medium,
                                     color=config.COLOR_PRIMARY)
-        self.quit_button   = Button(cx + 10,  mid - 10, 160, 50,
+        self.menu_button   = Button(cx - 80,  mid - 10, 160, 50,
+                                    "Main Menu",
+                                    font=self.font_medium,
+                                    color=(80, 130, 80))
+        self.quit_button   = Button(cx + 95,  mid - 10, 160, 50,
                                     "Save & Quit",
                                     font=self.font_medium,
                                     color=config.COLOR_ACCENT)
@@ -44,6 +48,8 @@ class SettingsScreen(BaseScreen):
             return "return"
         if self.return_button.handle_event(event):
             return "return"
+        if self.menu_button.handle_event(event):
+            return "main_menu"
         if self.quit_button.handle_event(event):
             return "quit"
         return None
@@ -53,6 +59,7 @@ class SettingsScreen(BaseScreen):
     def update(self, dt: float):
         pos = pygame.mouse.get_pos()
         self.return_button.update(pos)
+        self.menu_button.update(pos)
         self.quit_button.update(pos)
         if self.save_timer > 0:
             self.save_timer = max(0.0, self.save_timer - dt)
@@ -99,6 +106,7 @@ class SettingsScreen(BaseScreen):
 
         # Buttons
         self.return_button.render(self.display, self.font_medium)
+        self.menu_button.render(self.display, self.font_medium)
         self.quit_button.render(self.display, self.font_medium)
 
         # ESC hint

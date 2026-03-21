@@ -184,6 +184,11 @@ class Game:
                 if result == "quit" or self.ui.quit_requested:
                     self.running = False
                     break
+                elif result == "main_menu":
+                    # Reset player/slot so the outer run() loop shows the main menu
+                    self.player    = None
+                    self.save_slot = None
+                    break
 
     # ── Random encounter ──────────────────────────────────────────────────────
 
@@ -206,7 +211,7 @@ class Game:
                            is_player=False, is_wild=True)
 
         for _ in range(num_pokemon):
-            target = random.randint(max(5, avg_level - 3), min(100, avg_level + 3))
+            target = random.randint(max(5, avg_level - 5), min(100, avg_level - 1))
             pid, level = pick_encounter_pokemon(available_ids, target)
             opponent.add_pokemon(Pokemon(pid, level=level))
 
