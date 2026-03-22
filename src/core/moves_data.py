@@ -490,4 +490,154 @@ MOVES_DATA = {
         "description": "A spray of bubbles is forcefully ejected — may lower Speed.",
         "stat_effects": [],
     },
+
+    # ── Status-condition moves ────────────────────────────────────────────────
+    "thunder_wave": {
+        "type": PokemonType.ELECTRIC, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 20,
+        "description": "A weak electric charge paralyzes the target.",
+        "status_effect": {"status": "paralyzed", "target": "opponent"},
+    },
+    "stun_spore": {
+        "type": PokemonType.GRASS, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 75, "pp": 30,
+        "description": "The user scatters a cloud of paralyzing powder.",
+        "status_effect": {"status": "paralyzed", "target": "opponent"},
+    },
+    "glare": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 30,
+        "description": "The user intimidates the target with fierce glowing eyes.",
+        "status_effect": {"status": "paralyzed", "target": "opponent"},
+    },
+    "sleep_powder": {
+        "type": PokemonType.GRASS, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 75, "pp": 15,
+        "description": "The user scatters a cloud of sleep-inducing powder.",
+        "status_effect": {"status": "asleep", "target": "opponent"},
+    },
+    "hypnosis": {
+        "type": PokemonType.PSYCHIC, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 60, "pp": 20,
+        "description": "The user employs hypnotic suggestion to make the target fall asleep.",
+        "status_effect": {"status": "asleep", "target": "opponent"},
+    },
+    "sing": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 55, "pp": 15,
+        "description": "A soothing melody lulls the target into a deep sleep.",
+        "status_effect": {"status": "asleep", "target": "opponent"},
+    },
+    "spore": {
+        "type": PokemonType.GRASS, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 15,
+        "description": "The user scatters bursts of spores that induce sleep.",
+        "status_effect": {"status": "asleep", "target": "opponent"},
+    },
+    "lovely_kiss": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 75, "pp": 10,
+        "description": "With a nice look, the user demands a kiss, causing the target to fall asleep.",
+        "status_effect": {"status": "asleep", "target": "opponent"},
+    },
+    "poison_powder": {
+        "type": PokemonType.POISON, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 75, "pp": 35,
+        "description": "The user scatters a cloud of poisonous dust on the target.",
+        "status_effect": {"status": "poisoned", "target": "opponent"},
+    },
+    "poison_gas": {
+        "type": PokemonType.POISON, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 90, "pp": 40,
+        "description": "A cloud of poison gas is sprayed at the target.",
+        "status_effect": {"status": "poisoned", "target": "opponent"},
+    },
+    "toxic": {
+        "type": PokemonType.POISON, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 90, "pp": 10,
+        "description": "A move that badly poisons the target — poison damage increases each turn.",
+        "status_effect": {"status": "badly_poisoned", "target": "opponent"},
+    },
+    "confuse_ray": {
+        "type": PokemonType.GHOST, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 10,
+        "description": "The target is exposed to a sinister ray, causing confusion.",
+        "status_effect": {"status": "confused", "target": "opponent"},
+    },
+    "supersonic": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 55, "pp": 20,
+        "description": "The user generates odd sound waves to confuse the target.",
+        "status_effect": {"status": "confused", "target": "opponent"},
+    },
+    "leech_seed": {
+        "type": PokemonType.GRASS, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 90, "pp": 10,
+        "description": "Seeds are planted on the target. They drain HP each turn to heal the user.",
+        "status_effect": {"status": "leech_seeded", "target": "opponent"},
+    },
+
+    # ── Healing / recovery moves ──────────────────────────────────────────────
+    "recover": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 10,
+        "description": "Restores the user's HP by up to half its max HP.",
+        "special_effect": "recover",
+    },
+    "softboiled": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 10,
+        "description": "The user restores its own HP by up to half its max HP.",
+        "special_effect": "recover",
+    },
+    "rest": {
+        "type": PokemonType.PSYCHIC, "category": MoveCategory.STATUS,
+        "power": 0, "accuracy": 100, "pp": 10,
+        "description": "The user sleeps for 2 turns to fully restore HP and cure status.",
+        "special_effect": "rest",
+    },
+
+    # ── Fixed / special damage moves ──────────────────────────────────────────
+    "sonic_boom": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.SPECIAL,
+        "power": 0, "accuracy": 90, "pp": 20,
+        "description": "The target is hit with a destructive shock wave that always inflicts 20 HP damage.",
+        "special_effect": "fixed_20",
+    },
+    "super_fang": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.PHYSICAL,
+        "power": 0, "accuracy": 90, "pp": 10,
+        "description": "The user chomps hard on the target to cut its HP to half.",
+        "special_effect": "half_hp",
+    },
+    "night_shade": {
+        "type": PokemonType.GHOST, "category": MoveCategory.SPECIAL,
+        "power": 0, "accuracy": 100, "pp": 15,
+        "description": "The user makes the target see a frightening mirage. Deals damage equal to user's level.",
+        "special_effect": "level_damage",
+    },
+    "seismic_toss": {
+        "type": PokemonType.FIGHTING, "category": MoveCategory.PHYSICAL,
+        "power": 0, "accuracy": 100, "pp": 20,
+        "description": "The target is thrown using the power of gravity. Deals damage equal to user's level.",
+        "special_effect": "level_damage",
+    },
+    "horn_drill": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.PHYSICAL,
+        "power": 0, "accuracy": 30, "pp": 5,
+        "description": "The user stabs the target with a horn that rotates like a drill. One-hit KO.",
+        "special_effect": "ohko",
+    },
+    "guillotine": {
+        "type": PokemonType.NORMAL, "category": MoveCategory.PHYSICAL,
+        "power": 0, "accuracy": 30, "pp": 5,
+        "description": "A vicious, tearing attack with big pincers. One-hit KO.",
+        "special_effect": "ohko",
+    },
+    "fissure": {
+        "type": PokemonType.GROUND, "category": MoveCategory.PHYSICAL,
+        "power": 0, "accuracy": 30, "pp": 5,
+        "description": "The user opens a fissure to swallow the target. One-hit KO.",
+        "special_effect": "ohko",
+    },
 }

@@ -19,7 +19,7 @@ _QUADRANTS = [
     ("CENTER",    "Heal Pokemon",   "pokemon_center",  (170,  55, 100), (200,  75, 125), "cross"),
 ]
 
-_FOOTER_H = 40  # height of the settings footer strip
+_FOOTER_H = 44  # height of the settings footer strip
 
 
 class HubScreen(BaseScreen):
@@ -61,13 +61,15 @@ class HubScreen(BaseScreen):
         self._footer_rect = pygame.Rect(0, content_bot, config.SCREEN_WIDTH, _FOOTER_H)
 
         self._hovered: Optional[int] = None   # 0-3 for quads
-        self._footer_hovered = False
-        self._team_hovered   = False
+        self._footer_hovered  = False
+        self._team_hovered    = False
+        self._storage_hovered = False
 
-        # Split footer: left = My Team, right = Settings
-        split = config.SCREEN_WIDTH // 3
-        self._team_rect     = pygame.Rect(0,     content_bot, split,                       _FOOTER_H)
-        self._footer_rect   = pygame.Rect(split, content_bot, config.SCREEN_WIDTH - split, _FOOTER_H)
+        # Split footer: left = My Team, center = Storage, right = Settings
+        w3 = config.SCREEN_WIDTH // 3
+        self._team_rect     = pygame.Rect(0,      content_bot, w3,                         _FOOTER_H)
+        self._storage_rect  = pygame.Rect(w3,     content_bot, w3,                         _FOOTER_H)
+        self._footer_rect   = pygame.Rect(2 * w3, content_bot, config.SCREEN_WIDTH - 2 * w3, _FOOTER_H)
 
     # ------------------------------------------------------------------
     # Event / Update / Render
@@ -75,13 +77,16 @@ class HubScreen(BaseScreen):
 
     def handle_event(self, event: pygame.event.Event) -> Optional[Any]:
         if event.type == pygame.MOUSEMOTION:
-            self._hovered        = self._quad_at(event.pos)
-            self._footer_hovered = self._footer_rect.collidepoint(event.pos)
-            self._team_hovered   = self._team_rect.collidepoint(event.pos)
+            self._hovered          = self._quad_at(event.pos)
+            self._footer_hovered   = self._footer_rect.collidepoint(event.pos)
+            self._team_hovered     = self._team_rect.collidepoint(event.pos)
+            self._storage_hovered  = self._storage_rect.collidepoint(event.pos)
 
         elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if self._team_rect.collidepoint(event.pos):
                 return "pokemon"
+            if self._storage_rect.collidepoint(event.pos):
+                return "storage"
             if self._footer_rect.collidepoint(event.pos):
                 return "settings"
             idx = self._quad_at(event.pos)
@@ -99,6 +104,8 @@ class HubScreen(BaseScreen):
                 return _QUADRANTS[key_map[event.key]][2]
             if event.key in (pygame.K_5, pygame.K_KP5, pygame.K_t):
                 return "pokemon"
+            if event.key in (pygame.K_g, pygame.K_KP6):
+                return "storage"
             if event.key == pygame.K_ESCAPE:
                 return "settings"
 
@@ -107,9 +114,10 @@ class HubScreen(BaseScreen):
     def update(self, dt: float):
         self.star_time += dt
         pos = pygame.mouse.get_pos()
-        self._hovered        = self._quad_at(pos)
-        self._footer_hovered = self._footer_rect.collidepoint(pos)
-        self._team_hovered   = self._team_rect.collidepoint(pos)
+        self._hovered          = self._quad_at(pos)
+        self._footer_hovered   = self._footer_rect.collidepoint(pos)
+        self._team_hovered     = self._team_rect.collidepoint(pos)
+        self._storage_hovered  = self._storage_rect.collidepoint(pos)
 
     def render(self):
         self.display.fill(config.COLOR_MENU_BG)
@@ -175,7 +183,7 @@ class HubScreen(BaseScreen):
                               (rect.right - hint_surf.get_width() - 8,
                                rect.bottom - hint_surf.get_height() - 6))
 
-        # Footer — left: My Team, right: Settings
+        # Footer — left: My Team, center: Storage, right: Settings
         pygame.draw.line(self.display, (90, 90, 115),
                          (0, self._team_rect.top),
                          (config.SCREEN_WIDTH, self._team_rect.top), 1)
@@ -195,6 +203,22 @@ class HubScreen(BaseScreen):
         self.display.blit(team_surf,
                           (team_cx + 22,
                            self._team_rect.centery - team_surf.get_height() // 2))
+
+        # Storage tile
+        stor_col = (50, 100, 80) if self._storage_hovered else (35, 72, 58)
+        pygame.draw.rect(self.display, stor_col, self._storage_rect)
+        pygame.draw.line(self.display, (90, 90, 115),
+                         (self._storage_rect.right, self._storage_rect.top),
+                         (self._storage_rect.right, self._storage_rect.bottom), 1)
+        stor_cx = self._storage_rect.centerx - 35
+        stor_cy = self._storage_rect.centery
+        self._draw_icon("pack", stor_cx, stor_cy, self._storage_hovered)
+        stor_surf = self.font_small.render(
+            "PC STORAGE  [G]", True,
+            (200, 235, 215) if self._storage_hovered else (140, 180, 160))
+        self.display.blit(stor_surf,
+                          (stor_cx + 22,
+                           self._storage_rect.centery - stor_surf.get_height() // 2))
 
         # Settings tile
         footer_col = (75, 75, 95) if self._footer_hovered else (55, 55, 72)

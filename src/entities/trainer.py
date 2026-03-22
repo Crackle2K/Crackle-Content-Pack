@@ -21,6 +21,7 @@ class Trainer:
         self.is_player = is_player
         self.is_wild = is_wild
         self.team: list[Pokemon] = []
+        self.box: list[Pokemon] = []
         self.active_pokemon_index: int = 0
         self.money: int = 0
         self.items: dict = {}  # item_name -> count
@@ -108,6 +109,32 @@ class Trainer:
         self.items[item_name] -= 1
         if self.items[item_name] == 0:
             del self.items[item_name]
+        return True
+
+    def deposit_to_box(self, team_index: int) -> bool:
+        """Move a Pokemon from team to box. Team must keep at least 1."""
+        if len(self.team) <= 1:
+            return False
+        if team_index < 0 or team_index >= len(self.team):
+            return False
+        pk = self.team.pop(team_index)
+        self.box.append(pk)
+        # Fix active index if needed
+        if self.active_pokemon_index >= len(self.team):
+            self.active_pokemon_index = max(0, len(self.team) - 1)
+        # Make sure active pokemon is not fainted
+        if self.team[self.active_pokemon_index].is_fainted:
+            self.force_switch()
+        return True
+
+    def withdraw_from_box(self, box_index: int) -> bool:
+        """Move a Pokemon from box to team. Team must have room (< MAX_TEAM_SIZE)."""
+        if len(self.team) >= self.MAX_TEAM_SIZE:
+            return False
+        if box_index < 0 or box_index >= len(self.box):
+            return False
+        pk = self.box.pop(box_index)
+        self.team.append(pk)
         return True
 
     def heal_team(self):

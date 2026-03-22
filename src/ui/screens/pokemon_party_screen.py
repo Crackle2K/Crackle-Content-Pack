@@ -253,10 +253,10 @@ class PokemonPartyScreen(BaseScreen):
         self.display.blit(types_s, (_DX, _TYPES_Y))
 
         # XP bar
-        xp_needed = pk.level * 100
-        xp_ratio  = min(1.0, pk.experience_points / max(1, xp_needed))
+        gained, needed = pk.xp_progress_in_level()
+        xp_ratio = min(1.0, gained / max(1, needed))
         xp_lbl = self.font_small.render(
-            f"EXP  {pk.experience_points} / {xp_needed}  → Lv.{pk.level + 1}",
+            f"EXP  {gained} / {needed}  → Lv.{min(100, pk.level + 1)}",
             True, (170, 200, 255))
         self.display.blit(xp_lbl, (_DX, _XP_LBL_Y))
 

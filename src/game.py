@@ -133,6 +133,28 @@ class Game:
             self._new_game(slot)
             return
 
+        box_ids    = data.get("box_ids",    [])
+        box_levels = data.get("box_levels", [])
+        box_moves  = data.get("box_moves",  [])
+        box_xp     = data.get("box_xp",     [])
+        for i, (pid, lvl) in enumerate(zip(box_ids, box_levels)):
+            try:
+                pk = Pokemon(pid, level=lvl)
+                if i < len(box_xp):
+                    pk.experience_points = box_xp[i]
+                if i < len(box_moves) and box_moves[i]:
+                    restored = []
+                    for mn in box_moves[i][:4]:
+                        try:
+                            restored.append(Move(mn))
+                        except ValueError:
+                            pass
+                    if restored:
+                        pk.moves = restored
+                self.player.box.append(pk)
+            except Exception:
+                pass
+
         self.ui.show_message(f"Welcome back, {name}!")
         self.ui.wait_for_input()
         self._hub_loop()
@@ -192,6 +214,9 @@ class Game:
             elif action == "pokemon":
                 self.ui.show_pokemon_party(self.player)
                 self._save_game()
+            elif action == "storage":
+                self.ui.show_storage(self.player)
+                self._save_game()
             elif action == "shop":
                 self.ui.show_shop(self.player)
             elif action == "inventory":
@@ -224,15 +249,22 @@ class Game:
         # Use team average level for scaling
         team_levels = [p.level for p in self.player.team]
         avg_level   = sum(team_levels) // max(1, len(team_levels))
-        num_pokemon = len(self.player.team)
+
+        team_size = len(self.player.team)
+        if team_size <= 2:
+            num_pokemon = 1
+        elif team_size == 3:
+            num_pokemon = 2
+        else:
+            num_pokemon = 3
 
         # Wild encounter — player can catch these Pokemon
         opponent = Trainer(f"Wild Pokemon #{self.battles_won}",
                            is_player=False, is_wild=True)
 
         for _ in range(num_pokemon):
-            lo = max(1, avg_level - 5)
-            hi = min(100, avg_level)
+            lo = max(1, avg_level - 2)
+            hi = min(100, avg_level + 2)
             target = random.randint(lo, hi)
             pid, level = pick_encounter_pokemon(available_ids, target)
             opponent.add_pokemon(Pokemon(pid, level=level))
@@ -276,6 +308,10 @@ class Game:
             'battles_won':    self.battles_won,
             'money':          self.player.money,
             'items':          self.player.items,
+            'box_ids':        [p.id    for p in self.player.box],
+            'box_levels':     [p.level for p in self.player.box],
+            'box_moves':      [[m.name for m in p.moves] for p in self.player.box],
+            'box_xp':         [p.experience_points for p in self.player.box],
         }
 
         with open(save_folder / f"save_{self.save_slot}.json", "w") as f:
@@ -338,14 +374,14 @@ class Game:
                 caught, events = battle.attempt_catch(ball_slug)
                 self.ui.show_battle_events(events)
                 if caught and battle.caught_pokemon:
+                    pk = battle.caught_pokemon
                     if len(self.player.team) < Trainer.MAX_TEAM_SIZE:
-                        self.player.add_pokemon(battle.caught_pokemon)
-                        self.ui.show_message(
-                            f"{battle.caught_pokemon.get_display_name()} joined your team!")
+                        self.player.add_pokemon(pk)
+                        self.ui.show_message(f"{pk.get_display_name()} joined your team!")
                     else:
+                        self.player.box.append(pk)
                         self.ui.show_message(
-                            f"Team is full — {battle.caught_pokemon.get_display_name()} "
-                            f"could not be kept.")
+                            f"Team is full — {pk.get_display_name()} was sent to the PC box!")
                     self.ui.wait_for_input()
                     self.ui.show_battle_result(battle)
                     return True
@@ -406,32 +442,54 @@ class Game:
     # ── Post-battle rewards ───────────────────────────────────────────────────
 
     def _grant_battle_rewards(self, battle: Battle, opponent: Trainer):
-        """Grant XP (to Pokemon that fought) and money."""
-        total_xp = sum(p.level * 50 for p in opponent.team)
-        battlers = list(battle.player_battlers) if battle.player_battlers else self.player.team
-        xp_each  = total_xp // max(1, len(battlers))
+        """Grant XP to the whole team and prize money."""
+        battlers = set(battle.player_battlers) if battle.player_battlers else set(self.player.team)
 
-        level_ups: list[tuple] = []   # (pokemon, new_move_names)
-        for pk in battlers:
-            leveled, new_moves = pk.gain_exp(xp_each)
+        # XP messages
+        xp_msgs = []  # (pokemon, xp_gained, leveled_up, new_moves)
+        for pk in self.player.team:
+            if pk.is_fainted:
+                continue
+            total_xp = 0
+            for opp in opponent.team:
+                base_xp = getattr(opp, 'base_experience', 64)
+                xp = max(1, (base_xp * opp.level) // 7)
+                if pk not in battlers:
+                    xp = xp // 2  # bench gets half
+                total_xp += xp
+            leveled, new_moves = pk.gain_exp(total_xp)
+            xp_msgs.append((pk, total_xp, leveled, new_moves))
+
+        battler_names = ", ".join(p.get_display_name() for p in battlers if not p.is_fainted)
+        self.ui.show_message(f"Victory! {battler_names} gained full EXP!")
+
+        for pk, xp, leveled, new_moves in xp_msgs:
+            label = "(bench)" if pk not in battlers else ""
+            self.ui.show_message(f"{pk.get_display_name()} {label} gained {xp} EXP!")
+        self.ui.wait_for_input()
+
+        for pk, xp, leveled, new_moves in xp_msgs:
             if leveled:
-                level_ups.append((pk, new_moves))
-
-        self.ui.show_message(
-            f"Victory! {', '.join(p.get_display_name() for p in battlers)} "
-            f"gained {xp_each} EXP!")
-
-        for pk, new_moves in level_ups:
-            self.ui.show_message(f"{pk.get_display_name()} grew to Lv. {pk.level}!")
-            self.ui.wait_for_input()
-            for move_name in new_moves:
-                if len(pk.moves) < 4:
-                    if pk.learn_move(move_name):
-                        display = move_name.replace("_", " ").title()
-                        self.ui.show_message(
-                            f"{pk.get_display_name()} learned {display}!")
-                        self.ui.wait_for_input()
-                # If 4 moves already, skip silently (can be improved later)
+                self.ui.show_message(f"{pk.get_display_name()} grew to Lv. {pk.level}!")
+                self.ui.wait_for_input()
+                for move_name in new_moves:
+                    if len(pk.moves) < 4:
+                        if pk.learn_move(move_name):
+                            display = move_name.replace("_", " ").title()
+                            self.ui.show_message(f"{pk.get_display_name()} learned {display}!")
+                            self.ui.wait_for_input()
+                # Check for evolution after level-up
+                new_id = pk.check_evolution()
+                if new_id is not None:
+                    old_name    = pk.get_display_name()
+                    old_id      = pk.id
+                    old_species = pk.name
+                    pk.evolve(new_id)
+                    self.ui.show_evolution_cutscene(
+                        old_name, pk.get_display_name(),
+                        old_id, old_species,
+                        pk.id, pk.name,
+                    )
 
         prize = sum(p.level * 30 for p in opponent.team) + 50
         self.player.add_money(prize)

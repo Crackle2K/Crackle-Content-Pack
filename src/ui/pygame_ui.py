@@ -1,5 +1,6 @@
 """Pygame-based UI for the Pokemon game."""
 
+import math
 import pygame
 from typing import List, Tuple, Optional
 
@@ -15,6 +16,7 @@ from src.ui.screens.inventory_screen import InventoryScreen
 from src.ui.screens.pokemon_center_screen import PokemonCenterScreen
 from src.ui.screens.settings_screen import SettingsScreen
 from src.ui.screens.pokemon_party_screen import PokemonPartyScreen
+from src.ui.screens.storage_screen import StorageScreen
 from src.entities.pokemon import Pokemon
 from src.entities.trainer import Trainer
 from src.battle.battle import Battle, BattleEvent
@@ -122,6 +124,120 @@ class PygameUI:
         result = screen.run()
         if result is None:
             self.quit_requested = True
+
+    def show_storage(self, player: Trainer):
+        screen = StorageScreen(self.display, self.assets, player)
+        result = screen.run()
+        if result is None:
+            self.quit_requested = True
+
+    def show_evolution_cutscene(self, old_name: str, new_name: str,
+                                old_id: int, old_species: str,
+                                new_id: int, new_species: str):
+        """Play a flash-and-transform evolution animation."""
+        clock  = pygame.time.Clock()
+        W, H   = self.display.get_width(), self.display.get_height()
+        cx, cy = W // 2, H // 2 - 60
+
+        old_sprite = self.assets.get_sprite(old_id, old_species, scale=4.0)
+        new_sprite = self.assets.get_sprite(new_id, new_species, scale=4.0)
+
+        font_lrg = self.font_large
+        font_med = self.font_medium
+        font_sml = self.font_small
+
+        def _blit_sprite(surf, cx, cy):
+            if surf:
+                self.display.blit(surf, (cx - surf.get_width() // 2,
+                                         cy - surf.get_height() // 2))
+
+        def _draw_base(star_t: float):
+            self.display.fill((10, 12, 30))
+            for sx, sy, sz, phase in _stars:
+                b = int(130 + 90 * math.sin(star_t * 1.5 + phase))
+                pygame.draw.circle(self.display, (b, b, min(b + 30, 255)), (sx, sy), sz)
+
+        # Stable star field
+        import random as _rnd
+        rng = _rnd.Random(42)
+        _stars = [(rng.randint(0, W), rng.randint(0, H),
+                   rng.randint(1, 2), rng.uniform(0, math.pi * 2)) for _ in range(50)]
+
+        # ── Phase 1: announce (1.2 s) ──────────────────────────────────────
+        t = 0.0
+        while t < 1.2 and not self.quit_requested:
+            dt = clock.tick(60) / 1000.0
+            for ev in pygame.event.get():
+                if ev.type == pygame.QUIT:
+                    self.quit_requested = True
+            t += dt
+            _draw_base(t)
+            _blit_sprite(old_sprite, cx, cy)
+            msg = font_med.render(f"What? {old_name} is evolving!", True, (255, 245, 180))
+            self.display.blit(msg, (W // 2 - msg.get_width() // 2, cy + 130))
+            pygame.display.flip()
+
+        # ── Phase 2: flash animation (2.6 s) ──────────────────────────────
+        t = 0.0
+        flash_t = 0.0
+        flash_interval = 0.18
+        show_new = False
+        while t < 2.6 and not self.quit_requested:
+            dt = clock.tick(60) / 1000.0
+            for ev in pygame.event.get():
+                if ev.type == pygame.QUIT:
+                    self.quit_requested = True
+            t += dt
+            flash_t -= dt
+            if flash_t <= 0:
+                show_new = not show_new
+                flash_t = max(0.04, flash_interval * (1.0 - t / 3.0))
+
+            _draw_base(t + 1.2)
+
+            # Silhouette of current sprite
+            sprite = new_sprite if show_new else old_sprite
+            if sprite:
+                sil = sprite.copy()
+                sil.fill((255, 255, 255), special_flags=pygame.BLEND_RGB_MAX)
+                self.display.blit(sil, (cx - sil.get_width() // 2,
+                                         cy - sil.get_height() // 2))
+
+            # White flash overlay (fades as animation progresses)
+            alpha = int(200 * abs(math.sin(t * 9)) * max(0, 1 - t / 2.6))
+            if alpha > 0:
+                flash_surf = pygame.Surface((W, H), pygame.SRCALPHA)
+                flash_surf.fill((255, 255, 255, alpha))
+                self.display.blit(flash_surf, (0, 0))
+
+            msg = font_med.render(f"{old_name} is evolving!", True, (255, 245, 180))
+            self.display.blit(msg, (W // 2 - msg.get_width() // 2, cy + 130))
+            pygame.display.flip()
+
+        # ── Phase 3: reveal result (wait for input) ────────────────────────
+        waiting = True
+        blink_t = 0.0
+        while waiting and not self.quit_requested:
+            dt = clock.tick(60) / 1000.0
+            blink_t += dt
+            for ev in pygame.event.get():
+                if ev.type == pygame.QUIT:
+                    self.quit_requested = True
+                    waiting = False
+                elif ev.type in (pygame.MOUSEBUTTONDOWN, pygame.KEYDOWN):
+                    waiting = False
+
+            _draw_base(blink_t + 3.8)
+            _blit_sprite(new_sprite, cx, cy)
+
+            title = font_lrg.render(f"{old_name} evolved into {new_name}!",
+                                    True, (255, 220, 50))
+            self.display.blit(title, (W // 2 - title.get_width() // 2, cy + 120))
+
+            if int(blink_t * 2) % 2 == 0:
+                hint = font_sml.render("Press any key to continue", True, (180, 190, 220))
+                self.display.blit(hint, (W // 2 - hint.get_width() // 2, cy + 160))
+            pygame.display.flip()
 
     def show_settings(self, player: Trainer, battles_won: int) -> str:
         """Show the settings screen. Returns 'return' or 'quit'."""

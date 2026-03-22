@@ -28,10 +28,11 @@ _CATALOG: dict = {}
 class BattleScreen(BaseScreen):
     """Screen for Pokemon battles."""
 
-    STATE_MAIN   = "main"
-    STATE_MOVE   = "move"
-    STATE_SWITCH = "switch"
-    STATE_ITEM   = "item"
+    STATE_MAIN    = "main"
+    STATE_MOVE    = "move"
+    STATE_SWITCH  = "switch"
+    STATE_ITEM    = "item"
+    STATE_BALL    = "ball"
     STATE_MESSAGE = "message"
     STATE_RESULT  = "result"
 
@@ -154,6 +155,7 @@ class BattleScreen(BaseScreen):
         self.move_buttons   = []
         self.switch_buttons = []
         self.item_buttons: list[tuple[str, Button]] = []  # (slug, btn)
+        self.ball_buttons: list[tuple[str, Button]] = []  # (slug, btn)
         self.back_button = Button(
             config.SCREEN_WIDTH - 120, by, 100, bh, "Back",
             font=self.font_medium, color=config.COLOR_GRAY)
@@ -216,6 +218,28 @@ class BattleScreen(BaseScreen):
             btn  = Button(x, y, bw, bh, f"{name}  x{cnt}",
                           font=self.font_small, color=(50, 130, 220))
             self.item_buttons.append((slug, btn))
+
+    def _update_ball_buttons(self):
+        """Build buttons for each Pokéball type the player owns."""
+        self.ball_buttons = []
+        bw, bh = 200, 40
+        sx     = 30
+        sy     = config.SCREEN_HEIGHT - 85
+        ball_colors = {
+            "poke-ball":  (220, 60,  60),
+            "great-ball": (60,  80,  220),
+            "ultra-ball": (200, 180, 40),
+        }
+        owned = [(s, self.player.items[s]) for s in self.BALL_PRIORITY
+                 if self.player.items.get(s, 0) > 0]
+        for i, (slug, cnt) in enumerate(owned):
+            x    = sx + (i % 3) * (bw + 10)
+            y    = sy + (i // 3) * (bh + 5)
+            name = slug.replace("-", " ").title()
+            col  = ball_colors.get(slug, config.COLOR_ACCENT)
+            btn  = Button(x, y, bw, bh, f"{name}  x{cnt}",
+                          font=self.font_small, color=col)
+            self.ball_buttons.append((slug, btn))
 
     # ── Event display ─────────────────────────────────────────────────────────
 
@@ -302,13 +326,10 @@ class BattleScreen(BaseScreen):
                         if self.item_buttons:
                             self.state = self.STATE_ITEM
                         # else no items — stay in main (button visually disabled)
-                    elif i == 3: # Catch
-                        # Find best ball in inventory
-                        ball = next(
-                            (s for s in self.BALL_PRIORITY
-                             if self.player.items.get(s, 0) > 0),
-                            None)
-                        self.action_result = ("catch", ball)
+                    elif i == 3: # Catch — open ball picker
+                        self._update_ball_buttons()
+                        if self.ball_buttons:
+                            self.state = self.STATE_BALL
                     elif i == 4: # Run
                         self.action_result = ("run", 0)
 
@@ -330,6 +351,13 @@ class BattleScreen(BaseScreen):
             for btn in self.switch_buttons:
                 if btn.handle_event(event):
                     self.action_result = ("switch", btn.pokemon_index)
+            if self.back_button.handle_event(event):
+                self.state = self.STATE_MAIN
+
+        elif self.state == self.STATE_BALL:
+            for slug, btn in self.ball_buttons:
+                if btn.handle_event(event):
+                    self.action_result = ("catch", slug)
             if self.back_button.handle_event(event):
                 self.state = self.STATE_MAIN
 
@@ -373,6 +401,10 @@ class BattleScreen(BaseScreen):
             self.back_button.update(mouse_pos)
         elif self.state == self.STATE_SWITCH:
             for btn in self.switch_buttons:
+                btn.update(mouse_pos)
+            self.back_button.update(mouse_pos)
+        elif self.state == self.STATE_BALL:
+            for _, btn in self.ball_buttons:
                 btn.update(mouse_pos)
             self.back_button.update(mouse_pos)
 
@@ -424,6 +456,12 @@ class BattleScreen(BaseScreen):
                 btn.render(self.display, self.font_small)
             if not self.battle.player_must_switch():
                 self.back_button.render(self.display, self.font_medium)
+
+        elif self.state == self.STATE_BALL:
+            self._draw_panel_label("Throw which ball?")
+            for _, btn in self.ball_buttons:
+                btn.render(self.display, self.font_small)
+            self.back_button.render(self.display, self.font_medium)
 
         if self.state == self.STATE_RESULT:
             self._render_result()

@@ -157,6 +157,16 @@ class PokemonDataLoader:
         """Check if Pokemon data is available."""
         return len(self._cache) > 0
     
+    def get_base_experience(self, pokemon_id: int) -> int:
+        """Get base XP yield from GEN1_XP data."""
+        from src.core.gen1_xp_data import GEN1_XP
+        return GEN1_XP.get(pokemon_id, (64, "medium-fast"))[0]
+
+    def get_growth_rate(self, pokemon_id: int) -> str:
+        """Get growth rate from GEN1_XP data."""
+        from src.core.gen1_xp_data import GEN1_XP
+        return GEN1_XP.get(pokemon_id, (64, "medium-fast"))[1]
+
     def get_pokemon_description(self, pokemon_id: int) -> str:
         """Get Pokemon flavor text/description."""
         data = self.get_pokemon_data(pokemon_id)

@@ -120,6 +120,9 @@ class Battle:
             opponent_move = opponent_pokemon.moves[ai_action_index]
             self._execute_move(opponent_pokemon, player_pokemon, opponent_move, self.opponent, self.player)
 
+        # End-of-turn status damage (poison, burn, leech seed)
+        self._process_end_of_turn_status()
+
         # Check for fainted Pokemon and handle switches
         self._handle_fainting()
 
@@ -127,19 +130,33 @@ class Battle:
 
     def _determine_order(self, pokemon1: Pokemon, move1: Move, pokemon2: Pokemon, move2: Move) -> bool:
         """Determine if pokemon1 goes first."""
-        # Check priority
         priority1 = move1.priority if hasattr(move1, 'priority') else 0
         priority2 = move2.priority if hasattr(move2, 'priority') else 0
 
         if priority1 != priority2:
             return priority1 > priority2
 
-        # Check speed
-        if pokemon1.speed != pokemon2.speed:
-            return pokemon1.speed > pokemon2.speed
+        # Paralyzed Pokemon have halved effective speed
+        spd1 = pokemon1.speed * (0.5 if pokemon1.status == "paralyzed" else 1.0)
+        spd2 = pokemon2.speed * (0.5 if pokemon2.status == "paralyzed" else 1.0)
 
-        # Random tiebreaker
+        if spd1 != spd2:
+            return spd1 > spd2
+
         return random.random() < 0.5
+
+    def _process_end_of_turn_status(self):
+        """Apply end-of-turn status effects (burn, poison, leech seed)."""
+        player_pk   = self.player.get_active_pokemon()
+        opponent_pk = self.opponent.get_active_pokemon()
+
+        if player_pk and not player_pk.is_fainted:
+            for msg, _ in player_pk.process_end_of_turn(healer=opponent_pk):
+                self._add_event("status", msg)
+
+        if opponent_pk and not opponent_pk.is_fainted:
+            for msg, _ in opponent_pk.process_end_of_turn(healer=player_pk):
+                self._add_event("status", msg)
 
     def _execute_switch(self, trainer: Trainer, pokemon_index: int):
         """Execute a Pokemon switch."""
@@ -167,60 +184,100 @@ class Battle:
             self._add_event("no_pp", f"{attacker_name} tried to use {move.display_name} but has no PP left!")
             return
 
-        self._add_event("use_move", f"{attacker_name} used {move.display_name}!")
-
-        # Check accuracy (status moves are always 100% accurate)
-        if move.power > 0 and random.randint(1, 100) > move.accuracy:
-            self._add_event("miss", f"{attacker_name}'s attack missed!")
+        # Check if attacker can move (paralysis, sleep, confusion)
+        can_move, status_msg = attacker.check_can_move()
+        if status_msg:
+            self._add_event("status", status_msg)
+        if not can_move:
             return
 
-        stat_effects = getattr(move, "stat_effects", [])
+        self._add_event("use_move", f"{attacker_name} used {move.display_name}!")
 
-        # Pure status move — apply stat changes, no damage
+        stat_effects   = getattr(move, "stat_effects",   [])
+        status_effect  = getattr(move, "status_effect",  None)
+        special_effect = getattr(move, "special_effect", None)
+
+        # ── Special-effect moves (recover, rest, level_damage, etc.) ──────────
+        if special_effect:
+            self._handle_special_effect(special_effect, attacker, defender,
+                                        attacker_name, defender_name)
+            return
+
+        # ── Pure status move (power == 0) ──────────────────────────────────────
         if move.power == 0:
-            if not stat_effects:
-                self._add_event("no_effect", "But nothing happened!")
-                return
+            applied_something = False
+
+            # Stat-stage changes
             for eff in stat_effects:
                 target = attacker if eff["target"] == "self" else defender
                 target_name = attacker_name if eff["target"] == "self" else defender_name
-                changed, new_stage = target.apply_stat_change(eff["stat"], eff["change"])
+                changed, _ = target.apply_stat_change(eff["stat"], eff["change"])
                 stat_label = eff["stat"].replace("_", " ").title()
                 if not changed:
                     direction = "higher" if eff["change"] > 0 else "lower"
                     self._add_event("stat_change",
                                     f"{target_name}'s {stat_label} can't go any {direction}!")
                 else:
-                    if abs(eff["change"]) >= 2:
-                        adv = "sharply " if eff["change"] > 0 else "harshly "
-                    else:
-                        adv = ""
+                    adv = ("sharply " if eff["change"] >= 2 else
+                           "harshly " if eff["change"] <= -2 else "")
                     direction = "rose" if eff["change"] > 0 else "fell"
                     self._add_event("stat_change",
                                     f"{target_name}'s {stat_label} {adv}{direction}!")
+                    applied_something = True
+
+            # Status condition
+            if status_effect:
+                tgt = attacker if status_effect.get("target") == "self" else defender
+                tgt_name = attacker_name if status_effect.get("target") == "self" else defender_name
+                status = status_effect["status"]
+                if tgt.apply_status(status):
+                    label = status.replace("_", " ")
+                    if status == "asleep":
+                        self._add_event("status", f"{tgt_name} fell asleep!")
+                    elif status == "paralyzed":
+                        self._add_event("status", f"{tgt_name} is paralyzed! It may be unable to move!")
+                    elif status in ("poisoned", "badly_poisoned"):
+                        self._add_event("status", f"{tgt_name} was poisoned!")
+                    elif status == "burned":
+                        self._add_event("status", f"{tgt_name} was burned!")
+                    elif status == "confused":
+                        self._add_event("status", f"{tgt_name} became confused!")
+                    elif status == "leech_seeded":
+                        self._add_event("status", f"{tgt_name} was seeded!")
+                    applied_something = True
+                else:
+                    # Already has status — force-apply confusion as a secondary effect
+                    if status == "confused" and not tgt.confused:
+                        tgt.apply_status("confused")
+                        self._add_event("status", f"{tgt_name} became confused!")
+                    applied_something = True
+
+            if not applied_something and not stat_effects and not status_effect:
+                # Fallback: deal a small fixed hit so the move always does something
+                dmg = max(1, attacker.level // 2)
+                actual = defender.take_damage(dmg)
+                self._add_event("damage", f"{defender_name} took {actual} damage!",
+                                damage=actual, defender_hp=defender.current_hp)
             return
 
-        # Damaging move
+        # ── Damaging move ──────────────────────────────────────────────────────
         damage, effectiveness, is_critical = attacker.calculate_damage(move, defender)
 
         if effectiveness == 0:
-            self._add_event("no_effect", "It had no effect...")
-            return
+            effectiveness = 0.25  # Never fully immune — always deal reduced damage
 
         actual_damage = defender.take_damage(damage)
 
-        # Report effectiveness
         eff_message = TypeChart.get_effectiveness_message(effectiveness)
         if eff_message:
             self._add_event("effectiveness", eff_message)
-
         if is_critical:
             self._add_event("critical", "A critical hit!")
 
         self._add_event("damage", f"{defender_name} took {actual_damage} damage!",
-                       damage=actual_damage, defender_hp=defender.current_hp)
+                        damage=actual_damage, defender_hp=defender.current_hp)
 
-        # Secondary stat effects on damaging moves
+        # Secondary stat effects
         for eff in stat_effects:
             target = attacker if eff["target"] == "self" else defender
             target_name = attacker_name if eff["target"] == "self" else defender_name
@@ -229,6 +286,57 @@ class Battle:
                 stat_label = eff["stat"].replace("_", " ").title()
                 direction = "rose" if eff["change"] > 0 else "fell"
                 self._add_event("stat_change", f"{target_name}'s {stat_label} {direction}!")
+
+        # Secondary status effect (e.g. 30% burn from Flamethrower if configured)
+        if status_effect and not defender.is_fainted:
+            tgt = attacker if status_effect.get("target") == "self" else defender
+            tgt_name = attacker_name if status_effect.get("target") == "self" else defender_name
+            if tgt.apply_status(status_effect["status"]):
+                s = status_effect["status"]
+                if s == "paralyzed":
+                    self._add_event("status", f"{tgt_name} is paralyzed!")
+                elif s in ("poisoned", "badly_poisoned"):
+                    self._add_event("status", f"{tgt_name} was poisoned!")
+                elif s == "burned":
+                    self._add_event("status", f"{tgt_name} was burned!")
+
+    def _handle_special_effect(self, effect: str, attacker: Pokemon, defender: Pokemon,
+                                attacker_name: str, defender_name: str):
+        """Handle special-effect moves that don't follow normal damage rules."""
+        if effect == "recover":
+            healed = attacker.heal(attacker.max_hp // 2)
+            if healed > 0:
+                self._add_event("heal", f"{attacker_name} recovered {healed} HP!")
+
+        elif effect == "rest":
+            attacker.cure_status()
+            attacker.current_hp = attacker.max_hp
+            attacker.is_fainted = False
+            attacker.apply_status("asleep")
+            attacker.sleep_turns = 2
+            self._add_event("heal", f"{attacker_name} went to sleep and fully restored HP!")
+
+        elif effect == "level_damage":
+            dmg = attacker.level
+            actual = defender.take_damage(dmg)
+            self._add_event("damage", f"{defender_name} took {actual} damage!",
+                            damage=actual, defender_hp=defender.current_hp)
+
+        elif effect == "fixed_20":
+            actual = defender.take_damage(20)
+            self._add_event("damage", f"{defender_name} took {actual} damage!",
+                            damage=actual, defender_hp=defender.current_hp)
+
+        elif effect == "half_hp":
+            dmg = max(1, defender.current_hp // 2)
+            actual = defender.take_damage(dmg)
+            self._add_event("damage", f"{defender_name} took {actual} damage!",
+                            damage=actual, defender_hp=defender.current_hp)
+
+        elif effect == "ohko":
+            actual = defender.take_damage(defender.current_hp)
+            self._add_event("damage", f"It's a one-hit KO! {defender_name} took {actual} damage!",
+                            damage=actual, defender_hp=0)
 
     def _handle_fainting(self):
         """Handle fainted Pokemon and determine if battle is over."""
@@ -264,6 +372,7 @@ class Battle:
                 opp_move = opponent_pokemon.moves[ai_idx]
                 self._execute_move(opponent_pokemon, player_pokemon, opp_move,
                                    self.opponent, self.player)
+        self._process_end_of_turn_status()
         self._handle_fainting()
         return self.events
 

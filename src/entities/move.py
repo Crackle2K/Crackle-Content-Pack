@@ -39,8 +39,11 @@ class Move:
             self.current_pp   = self.max_pp
             self.priority     = int(d.get("priority", 0))
             self.description  = d.get("description", "")
-            # JSON may lack stat_effects; fall back to Python data dict if so
-            self.stat_effects = d.get("stat_effects") or MOVES_DATA.get(move_name, {}).get("stat_effects", [])
+            # JSON may lack stat_effects/status_effect; fall back to Python data dict
+            py = MOVES_DATA.get(move_name, {})
+            self.stat_effects  = d.get("stat_effects")  or py.get("stat_effects",  [])
+            self.status_effect = d.get("status_effect") or py.get("status_effect", None)
+            self.special_effect = d.get("special_effect") or py.get("special_effect", None)
 
         elif move_name in MOVES_DATA:
             d                 = MOVES_DATA[move_name]
@@ -54,7 +57,9 @@ class Move:
             self.current_pp   = self.max_pp
             self.priority     = d.get("priority", 0)
             self.description  = d["description"]
-            self.stat_effects = d.get("stat_effects", [])
+            self.stat_effects  = d.get("stat_effects",  [])
+            self.status_effect = d.get("status_effect", None)
+            self.special_effect = d.get("special_effect", None)
 
         else:
             raise ValueError(f"Unknown move: {move_name}")
